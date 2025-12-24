@@ -5,7 +5,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/movie.dart';
+import '../models/collection.dart';
 import '../services/movie_service.dart';
+import '../services/collection_service.dart';
 import '../services/tmdb_service.dart';
 import 'movie_detail_screen.dart';
 
@@ -19,11 +21,13 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _controller = TextEditingController();
   final MovieService _movieService = MovieService();
+  final CollectionService _collectionService = CollectionService();
   final TMDBService _tmdbService = TMDBService();
   String _result = '';
   String? _posterUrl;
   bool _isLoading = false;
   List<Movie> _searchHistory = [];
+  List<Collection> _collections = [];
 
   // API Key provided by the user (Groq)
   final String _apiKey = dotenv.env['GROQ_API_KEY'] ?? '';
@@ -34,11 +38,25 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSearchHistory();
+    _loadData();
     // Listen to Auth State Changes to reload data if user logs in
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-       _loadSearchHistory();
+       _loadData();
     });
+  }
+
+  Future<void> _loadData() async {
+    await _loadSearchHistory();
+    await _loadCollections();
+  }
+
+  Future<void> _loadCollections() async {
+    final cols = await _collectionService.getCollections();
+    if (mounted) {
+      setState(() {
+        _collections = cols;
+      });
+    }
   }
 
   Future<void> _loadSearchHistory() async {
@@ -155,6 +173,48 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void _showCollectionDialog() {
+    final TextEditingController nameController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text("New Collection"),
+          content: TextField(
+            controller: nameController,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'Name your collection',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () async {
+                final name = nameController.text.trim();
+                if (name.isNotEmpty) {
+                  try {
+                    await _collectionService.createCollection(name);
+                    await _loadCollections();
+                    if (context.mounted) Navigator.pop(context);
+                  } catch (e) {
+                    // Handle error
+                  }
+                }
+              },
+              child: const Text("Create", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+          ],
         );
       },
     );
@@ -413,24 +473,68 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                         _buildMenuButton(
                           icon: Icons.collections_bookmark_outlined,
                           label: 'New collection',
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Coming Soon')),
-                            );
-                          },
+                          onTap: _showCollectionDialog,
                           isPrimary: false,
                         ),
                       ],
                     ),
                   ),
                 ),
-                // 3. Content (Grid or Empty State)
+                // 3. Content (Collections + Grid or Empty State)
+                if (_collections.isNotEmpty) ...[
+                  SliverToBoxAdapter(
+                    child: Container(
+                      height: 100,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: _collections.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        itemBuilder: (context, index) {
+                          final collection = _collections[index];
+                          return Container(
+                            width: 140,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.folder_open_rounded, color: Colors.black54),
+                                const Spacer(),
+                                Text(
+                                  collection.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const Text(
+                                  "0 items", // Placeholder count
+                                  style: TextStyle(fontSize: 10, color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+
                 if (_searchHistory.isNotEmpty) ...[
                   const SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: Text(
-                        "Collection",
+                        "History", // Renamed from "Collection" to avoid confusion
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
