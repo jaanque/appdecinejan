@@ -43,6 +43,32 @@ class TMDBService {
     return null;
   }
 
+  Future<List<Movie>> getTrendingMovies() async {
+    final client = HttpClient();
+    try {
+      final uri = Uri.parse('https://api.themoviedb.org/3/trending/movie/week?language=en-US');
+
+      final request = await client.getUrl(uri);
+      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $_accessToken');
+      request.headers.set(HttpHeaders.acceptHeader, 'application/json');
+
+      final response = await request.close();
+
+      if (response.statusCode == 200) {
+        final responseBody = await response.transform(utf8.decoder).join();
+        final json = jsonDecode(responseBody);
+        final results = json['results'] as List;
+
+        return results.map((m) => _movieFromTMDBJson(m)).toList();
+      }
+    } catch (e) {
+      debugPrint('Error fetching trending movies: $e');
+    } finally {
+      client.close();
+    }
+    return [];
+  }
+
   Future<Movie?> getMovieDetails(String title) async {
     // 1. Search for the movie to get the ID and basic info
     final basicMovie = await searchMovie(title);
