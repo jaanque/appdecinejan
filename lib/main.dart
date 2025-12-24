@@ -47,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final String _apiKey = dotenv.env['GROQ_API_KEY'] ?? '';
 
   // TMDB Access Token
-  final String _tmdbAccessToken = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI4MGQwM2U5NTkyOTE2ZmJkYzEzZDIxZWRkYWY1ODg4MiIsIm5iZiI6MTc2NjM5NjY5OS42MDgsInN1YiI6IjY5NDkxMzFiYWY0NzUyMWNlZTA3MzVkOCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.PrNgmsWb8e9vBRskKUbNFR3FwxGpRvbfu_dgSZRj-vI';
+  final String _tmdbAccessToken = dotenv.env['TMDB_ACCESS_TOKEN'] ?? '';
 
   Future<void> _processUrl() async {
     final url = _controller.text.trim();
@@ -59,20 +59,25 @@ class _HomeScreenState extends State<HomeScreen> {
       _posterUrl = null;
     });
 
+    debugPrint('Processing URL: $url');
+
     final client = HttpClient();
     try {
       // 1. Extraction of Metadata (JSON)
       // We use the public oembed endpoint
       final oembedUri = Uri.parse('https://www.tiktok.com/oembed?url=$url');
+      debugPrint('Fetching oEmbed from: $oembedUri');
 
       final oembedRequest = await client.getUrl(oembedUri);
       final oembedResponse = await oembedRequest.close();
 
       if (oembedResponse.statusCode != 200) {
+        debugPrint('TikTok oEmbed failed with status: ${oembedResponse.statusCode}');
         throw Exception('Error fetching TikTok metadata: ${oembedResponse.statusCode}');
       }
 
       final jsonString = await oembedResponse.transform(utf8.decoder).join();
+      debugPrint('TikTok Metadata: $jsonString');
 
       // 2. Consultation with AI via REST API
       // Endpoint: https://api.groq.com/openai/v1/chat/completions
@@ -92,6 +97,7 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
         ]
       };
 
+      debugPrint('Sending prompt to Groq...');
       final groqRequest = await client.postUrl(groqUri);
       groqRequest.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
       groqRequest.headers.set(HttpHeaders.authorizationHeader, 'Bearer $_apiKey');
@@ -99,6 +105,7 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
 
       final groqResponse = await groqRequest.close();
       final groqResponseBody = await groqResponse.transform(utf8.decoder).join();
+      debugPrint('Groq Response: $groqResponseBody');
 
       if (groqResponse.statusCode != 200) {
         throw Exception('Error from Groq API: $groqResponseBody');
@@ -117,6 +124,7 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
       }
 
       final movieName = aiText ?? 'No valid response from AI';
+      debugPrint('AI identified movie: $movieName');
 
       String? posterPath;
       if (movieName != 'No identificada' && !movieName.contains('No valid response')) {
@@ -130,6 +138,7 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
       });
 
     } catch (e) {
+      debugPrint('Error caught: $e');
       setState(() {
         _result = 'Error: $e';
       });
@@ -143,6 +152,8 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
 
   Future<String?> _fetchPosterFromTMDB(HttpClient client, String query) async {
     try {
+      debugPrint('Searching TMDB for: $query');
+      // Use search/multi to find movies or TV shows
       final tmdbUri = Uri.parse(
           'https://api.themoviedb.org/3/search/multi?query=${Uri.encodeComponent(query)}&include_adult=false&language=en-US&page=1');
 
@@ -151,17 +162,36 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
       request.headers.set(HttpHeaders.acceptHeader, 'application/json');
 
       final response = await request.close();
+      final responseBody = await response.transform(utf8.decoder).join();
+      debugPrint('TMDB Response Code: ${response.statusCode}');
+
       if (response.statusCode == 200) {
-        final responseBody = await response.transform(utf8.decoder).join();
         final json = jsonDecode(responseBody);
+        debugPrint('TMDB Results count: ${(json['results'] as List?)?.length}');
 
         if (json['results'] != null && (json['results'] as List).isNotEmpty) {
-          final firstResult = json['results'][0];
-          final posterPath = firstResult['poster_path'];
-          if (posterPath != null) {
-            return 'https://image.tmdb.org/t/p/w500$posterPath';
+          // Filter results to prefer movies or tv shows with posters
+          final results = json['results'] as List;
+
+          // Try to find the first result with a poster path
+          var bestResult = results.firstWhere(
+            (r) => r['poster_path'] != null,
+            orElse: () => null,
+          );
+
+          if (bestResult != null) {
+            final posterPath = bestResult['poster_path'];
+            final url = 'https://image.tmdb.org/t/p/w500$posterPath';
+            debugPrint('Found poster URL: $url');
+            return url;
+          } else {
+             debugPrint('No result had a poster_path.');
           }
+        } else {
+          debugPrint('TMDB returned no results for query.');
         }
+      } else {
+         debugPrint('TMDB Error Body: $responseBody');
       }
     } catch (e) {
       debugPrint('Error fetching TMDB poster: $e');
@@ -295,11 +325,19 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
                                       );
                                     },
                                     errorBuilder: (context, error, stackTrace) {
+                                      debugPrint('Error loading image: $error');
                                       return Container(
                                         height: 300,
                                         width: 200,
                                         color: Colors.grey[200],
-                                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                                        child: const Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.broken_image, color: Colors.grey),
+                                            SizedBox(height: 8),
+                                            Text('Image Error', style: TextStyle(color: Colors.grey)),
+                                          ],
+                                        ),
                                       );
                                     },
                                   ),
@@ -323,7 +361,7 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
                             ],
                           ),
                         )
-                      : null, // Blank initially
+                      : null,
             ),
           ),
 
