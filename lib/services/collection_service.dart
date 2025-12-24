@@ -14,6 +14,9 @@ class CollectionService {
         'user_id': user.id,
         'name': name,
       });
+    } on PostgrestException catch (e) {
+      _handlePostgrestError(e);
+      rethrow;
     } catch (e) {
       debugPrint('Error creating collection: $e');
       rethrow;
@@ -32,9 +35,23 @@ class CollectionService {
 
       final List<dynamic> data = response as List<dynamic>;
       return data.map((json) => Collection.fromJson(json)).toList();
+    } on PostgrestException catch (e) {
+      _handlePostgrestError(e);
+      return [];
     } catch (e) {
       debugPrint('Error fetching collections: $e');
       return [];
+    }
+  }
+
+  void _handlePostgrestError(PostgrestException e) {
+    if (e.code == 'PGRST205' || e.message.contains('Could not find the table')) {
+      debugPrint(
+          'CRITICAL ERROR: Table "collections" not found in Supabase schema cache.\n'
+          'SOLUTION: Run the following SQL command in your Supabase SQL Editor:\n'
+          "NOTIFY pgrst, 'reload schema';");
+    } else {
+      debugPrint('Postgrest Error: ${e.message} (Code: ${e.code})');
     }
   }
 
