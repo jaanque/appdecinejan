@@ -100,6 +100,7 @@ class _MainScreenState extends State<MainScreen> {
           surfaceTintColor: Colors.transparent,
           indicatorColor: Colors.transparent, // Minimalist: No heavy indicator blob, just icon color change
           elevation: 0,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
           destinations: [
             NavigationDestination(
               icon: Icon(Icons.home_outlined, color: Colors.grey.shade600),

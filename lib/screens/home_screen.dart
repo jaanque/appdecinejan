@@ -419,14 +419,14 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                       children: [
                         _buildMenuButton(
                           icon: Icons.add,
-                          label: 'New',
+                          label: 'New film',
                           onTap: _showInputDialog,
                           isPrimary: true,
                         ),
                         const SizedBox(width: 12),
                         _buildMenuButton(
                           icon: Icons.collections_bookmark_outlined,
-                          label: 'Collections',
+                          label: 'New collection',
                           onTap: () {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Coming Soon')),
