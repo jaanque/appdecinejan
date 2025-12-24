@@ -287,6 +287,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    bool isPrimary = false,
   }) {
     return Expanded(
       child: InkWell(
@@ -295,21 +296,21 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: isPrimary ? Colors.black : Colors.grey.shade50,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: isPrimary ? Colors.black : Colors.grey.shade200),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 20, color: Colors.black87),
+              Icon(icon, size: 20, color: isPrimary ? Colors.white : Colors.black87),
               const SizedBox(width: 8),
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black87,
+                  color: isPrimary ? Colors.white : Colors.black87,
                 ),
               ),
             ],
@@ -333,10 +334,10 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                 strokeWidth: 2,
               ),
             )
-          else if (_searchHistory.isNotEmpty)
-            // Grid of Saved Movies
+          else
             CustomScrollView(
               slivers: [
+                // 1. Header
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 60, 16, 0),
@@ -357,6 +358,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                     ),
                   ),
                 ),
+                // 2. Action Menu
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
@@ -366,6 +368,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                           icon: Icons.add,
                           label: 'New',
                           onTap: _showInputDialog,
+                          isPrimary: true,
                         ),
                         const SizedBox(width: 12),
                         _buildMenuButton(
@@ -376,182 +379,153 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                               const SnackBar(content: Text('Coming Soon')),
                             );
                           },
+                          isPrimary: false,
                         ),
                       ],
                     ),
                   ),
                 ),
-                SliverPadding(
-                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-                  sliver: SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.7, // Movie poster ratio
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
+                // 3. Content (Grid or Empty State)
+                if (_searchHistory.isNotEmpty) ...[
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Text(
+                        "Recent History",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
                     ),
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final movie = _searchHistory[index];
-                        return Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => MovieDetailScreen(movie: movie),
-                                ),
-                              );
-                            },
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                Hero(
-                                  tag: 'movie_poster_${movie.title}',
-                                  child: Image.network(
-                                    movie.posterUrl,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (ctx, err, stack) => Container(
-                                      color: Colors.grey[200],
-                                      child: const Center(
-                                        child: Icon(Icons.broken_image, color: Colors.grey),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  bottom: 0,
-                                  left: 0,
-                                  right: 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.bottomCenter,
-                                        end: Alignment.topCenter,
-                                        colors: [
-                                          Colors.black.withOpacity(0.8),
-                                          Colors.transparent,
-                                        ],
-                                      ),
-                                    ),
-                                    child: Text(
-                                      movie.title,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                  ),
+                  ),
+                  SliverPadding(
+                    padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                    sliver: SliverGrid(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.7, // Movie poster ratio
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final movie = _searchHistory[index];
+                          return Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.05),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
                                 ),
                               ],
                             ),
-                          ),
-                        );
-                      },
-                      childCount: _searchHistory.length,
+                            clipBehavior: Clip.antiAlias,
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => MovieDetailScreen(movie: movie),
+                                  ),
+                                );
+                              },
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Hero(
+                                    tag: 'movie_poster_${movie.title}',
+                                    child: Image.network(
+                                      movie.posterUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (ctx, err, stack) => Container(
+                                        color: Colors.grey[200],
+                                        child: const Center(
+                                          child: Icon(Icons.broken_image, color: Colors.grey),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.bottomCenter,
+                                          end: Alignment.topCenter,
+                                          colors: [
+                                            Colors.black.withOpacity(0.8),
+                                            Colors.transparent,
+                                          ],
+                                        ),
+                                      ),
+                                      child: Text(
+                                        movie.title,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                        childCount: _searchHistory.length,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            )
-          else
-            // Empty State
-            Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: Column(
-                children: [
-                  const SizedBox(height: 60), // Top margin
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.movie_filter_rounded, size: 32, color: Colors.black),
-                      const SizedBox(width: 12),
-                      const Text(
-                        "loremipsum",
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.black,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.movie_creation_outlined,
-                          size: 80,
-                          color: Colors.grey.shade300,
-                        ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          "Seen a movie on TikTok?",
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                ] else
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Padding(
+                      padding: const EdgeInsets.all(32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.movie_creation_outlined,
+                            size: 80,
+                            color: Colors.grey.shade300,
                           ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          "Find the title instantly.",
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade500,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 32),
-                        ElevatedButton(
-                          onPressed: _showInputDialog,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 32, vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
+                          const SizedBox(height: 24),
+                          const Text(
+                            "Seen a movie on TikTok?",
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
                             ),
+                            textAlign: TextAlign.center,
                           ),
-                          child: const Text(
-                            'Identify Movie',
+                          const SizedBox(height: 8),
+                          Text(
+                            "Find the title instantly.",
                             style: TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade500,
                             ),
+                            textAlign: TextAlign.center,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ],
-              ),
+              ],
             ),
 
           // Result Modal / Overlay if result is present?
-          // Actually, if we add to grid, we might just scroll to top or show a dialog.
-          // The current logic was replacing the whole screen.
-          // Let's create a temporary overlay or dialog for the Result if it's new.
           if (_result.isNotEmpty && !_isLoading && _posterUrl != null)
              Positioned.fill(
               child: GestureDetector(
