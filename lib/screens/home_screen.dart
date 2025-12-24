@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/movie.dart';
+import '../services/movie_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,6 +16,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _controller = TextEditingController();
+  final MovieService _movieService = MovieService();
   String _result = '';
   String? _posterUrl;
   bool _isLoading = false;
@@ -29,23 +32,76 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadSearchHistory();
+    // Listen to Auth State Changes to reload data if user logs in
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+       _loadSearchHistory();
+    });
   }
 
   Future<void> _loadSearchHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? historyJson = prefs.getString('search_history');
-    if (historyJson != null) {
-      final List<dynamic> decodedList = jsonDecode(historyJson);
-      setState(() {
-        _searchHistory = decodedList.map((item) => Movie.fromJson(item)).toList();
-      });
+    final user = Supabase.instance.client.auth.currentUser;
+
+    if (user != null) {
+      // 1. Fetch from Supabase if logged in
+      try {
+        final movies = await _movieService.getMovies();
+        if (mounted) {
+          setState(() {
+            _searchHistory = movies;
+          });
+        }
+      } catch (e) {
+        debugPrint('Error loading movies from Supabase: $e');
+        // Fallback or show error? For now, silent fail or maybe fallback to local
+      }
+    } else {
+      // 2. Fetch from SharedPreferences if guest
+      final prefs = await SharedPreferences.getInstance();
+      final String? historyJson = prefs.getString('search_history');
+      if (historyJson != null) {
+        final List<dynamic> decodedList = jsonDecode(historyJson);
+        if (mounted) {
+          setState(() {
+            _searchHistory = decodedList.map((item) => Movie.fromJson(item)).toList();
+          });
+        }
+      } else {
+        if (mounted) {
+           setState(() {
+            _searchHistory = [];
+          });
+        }
+      }
     }
   }
 
-  Future<void> _saveSearchHistory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String historyJson = jsonEncode(_searchHistory.map((m) => m.toJson()).toList());
-    await prefs.setString('search_history', historyJson);
+  Future<void> _saveSearchHistory(Movie newMovie) async {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    if (user != null) {
+      // 1. Save to Supabase
+      try {
+        await _movieService.saveMovie(newMovie.title, newMovie.posterUrl);
+        // Reload to get the new ID and correct order, or just manually insert to list
+        // Re-fetching is safer for consistency
+        await _loadSearchHistory();
+      } catch (e) {
+        debugPrint('Error saving to Supabase: $e');
+         if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error guardando en la nube")));
+        }
+      }
+    } else {
+      // 2. Save to SharedPreferences
+      setState(() {
+        _searchHistory.removeWhere((m) => m.title == newMovie.title);
+        _searchHistory.insert(0, newMovie);
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+      final String historyJson = jsonEncode(_searchHistory.map((m) => m.toJson()).toList());
+      await prefs.setString('search_history', historyJson);
+    }
   }
 
   Future<void> _processUrl() async {
@@ -133,14 +189,7 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
         // Save to history
         if (posterPath != null) {
           final newMovie = Movie(title: movieName, posterUrl: posterPath);
-          // Add to start of list
-          setState(() {
-            // Remove if already exists to avoid duplicates? Or keep duplicates?
-            // Let's prevent consecutive duplicates at least, or check by title.
-            _searchHistory.removeWhere((m) => m.title == movieName);
-            _searchHistory.insert(0, newMovie);
-          });
-          _saveSearchHistory();
+          await _saveSearchHistory(newMovie);
         }
       }
 
