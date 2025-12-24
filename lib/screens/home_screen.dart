@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../models/movie.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,12 +17,36 @@ class _HomeScreenState extends State<HomeScreen> {
   String _result = '';
   String? _posterUrl;
   bool _isLoading = false;
+  List<Movie> _searchHistory = [];
 
   // API Key provided by the user (Groq)
   final String _apiKey = dotenv.env['GROQ_API_KEY'] ?? '';
 
   // TMDB Access Token
   final String _tmdbAccessToken = dotenv.env['TMDB_ACCESS_TOKEN'] ?? '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSearchHistory();
+  }
+
+  Future<void> _loadSearchHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? historyJson = prefs.getString('search_history');
+    if (historyJson != null) {
+      final List<dynamic> decodedList = jsonDecode(historyJson);
+      setState(() {
+        _searchHistory = decodedList.map((item) => Movie.fromJson(item)).toList();
+      });
+    }
+  }
+
+  Future<void> _saveSearchHistory() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String historyJson = jsonEncode(_searchHistory.map((m) => m.toJson()).toList());
+    await prefs.setString('search_history', historyJson);
+  }
 
   Future<void> _processUrl() async {
     final url = _controller.text.trim();
@@ -103,6 +129,19 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
       if (movieName != 'No identificada' && !movieName.contains('No valid response')) {
         // 3. Fetch Poster from TMDB
         posterPath = await _fetchPosterFromTMDB(client, movieName);
+
+        // Save to history
+        if (posterPath != null) {
+          final newMovie = Movie(title: movieName, posterUrl: posterPath);
+          // Add to start of list
+          setState(() {
+            // Remove if already exists to avoid duplicates? Or keep duplicates?
+            // Let's prevent consecutive duplicates at least, or check by title.
+            _searchHistory.removeWhere((m) => m.title == movieName);
+            _searchHistory.insert(0, newMovie);
+          });
+          _saveSearchHistory();
+        }
       }
 
       setState(() {
@@ -247,146 +286,152 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Center Content (Result or Loading)
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: _isLoading
-                  ? const CircularProgressIndicator(
-                      color: Colors.black,
-                      strokeWidth: 2,
-                    )
-                  : _result.isNotEmpty
-                      ? SingleChildScrollView(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+          // Main Content
+          if (_isLoading)
+            const Center(
+              child: CircularProgressIndicator(
+                color: Colors.black,
+                strokeWidth: 2,
+              ),
+            )
+          else if (_searchHistory.isNotEmpty)
+            // Grid of Saved Movies
+            CustomScrollView(
+              slivers: [
+                const SliverToBoxAdapter(child: SizedBox(height: 60)), // Space for top buttons if needed
+                SliverPadding(
+                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 100), // Bottom padding for floating nav
+                  sliver: SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.7, // Movie poster ratio
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final movie = _searchHistory[index];
+                        return Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Stack(
+                            fit: StackFit.expand,
                             children: [
-                              if (_posterUrl != null)
-                                Container(
-                                  constraints: const BoxConstraints(
-                                    maxHeight: 400,
-                                    maxWidth: 300,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        blurRadius: 20,
-                                        offset: const Offset(0, 10),
-                                      ),
-                                    ],
-                                  ),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: Image.network(
-                                    _posterUrl!,
-                                    fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
-                                      if (loadingProgress == null) return child;
-                                      return Container(
-                                        height: 300,
-                                        width: 200,
-                                        color: Colors.grey[100],
-                                        child: Center(
-                                          child: CircularProgressIndicator(
-                                            value: loadingProgress.expectedTotalBytes != null
-                                                ? loadingProgress.cumulativeBytesLoaded /
-                                                    loadingProgress.expectedTotalBytes!
-                                                : null,
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    errorBuilder: (context, error, stackTrace) {
-                                      debugPrint('Error loading image: $error');
-                                      return Container(
-                                        height: 300,
-                                        width: 200,
-                                        color: Colors.grey[200],
-                                        child: const Column(
-                                          mainAxisAlignment: MainAxisAlignment.center,
-                                          children: [
-                                            Icon(Icons.broken_image, color: Colors.grey),
-                                            SizedBox(height: 8),
-                                            Text('Image Error', style: TextStyle(color: Colors.grey)),
-                                          ],
-                                        ),
-                                      );
-                                    },
+                              Image.network(
+                                movie.posterUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (ctx, err, stack) => Container(
+                                  color: Colors.grey[200],
+                                  child: const Center(
+                                    child: Icon(Icons.broken_image, color: Colors.grey),
                                   ),
                                 ),
-                              const SizedBox(height: 32),
-                              AnimatedOpacity(
-                                opacity: 1.0,
-                                duration: const Duration(milliseconds: 500),
-                                child: Text(
-                                  _result,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
-                                    letterSpacing: -0.5,
-                                    height: 1.2,
+                              ),
+                              Positioned(
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.bottomCenter,
+                                      end: Alignment.topCenter,
+                                      colors: [
+                                        Colors.black.withOpacity(0.8),
+                                        Colors.transparent,
+                                      ],
+                                    ),
+                                  ),
+                                  child: Text(
+                                    movie.title,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.movie_creation_outlined,
-                              size: 80,
-                              color: Colors.grey.shade300,
-                            ),
-                            const SizedBox(height: 24),
-                            const Text(
-                              "¿Viste una peli en TikTok?",
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "Descubre el nombre al instante.",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey.shade500,
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 32),
-                            ElevatedButton(
-                              onPressed: _showInputDialog,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 32, vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                              ),
-                              child: const Text(
-                                'Identificar Película',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
+                        );
+                      },
+                      childCount: _searchHistory.length,
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            // Empty State
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.movie_creation_outlined,
+                      size: 80,
+                      color: Colors.grey.shade300,
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      "¿Viste una peli en TikTok?",
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Descubre el nombre al instante.",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey.shade500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    ElevatedButton(
+                      onPressed: _showInputDialog,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 32, vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
                         ),
+                      ),
+                      child: const Text(
+                        'Identificar Película',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
 
           // Top Right + Button
           Positioned(
@@ -403,12 +448,61 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
                   tooltip: 'Agregar Link',
                   style: IconButton.styleFrom(
                      shape: const CircleBorder(),
+                     backgroundColor: Colors.white.withOpacity(0.8), // Slight background for visibility over grid
                      padding: const EdgeInsets.all(8),
                   ),
                 ),
               ),
             ),
           ),
+
+          // Result Modal / Overlay if result is present?
+          // Actually, if we add to grid, we might just scroll to top or show a dialog.
+          // The current logic was replacing the whole screen.
+          // Let's create a temporary overlay or dialog for the Result if it's new.
+          if (_result.isNotEmpty && !_isLoading && _posterUrl != null)
+             Positioned.fill(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _result = ''; // Close overlay
+                  });
+                },
+                child: Container(
+                  color: Colors.black.withOpacity(0.8),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          constraints: const BoxConstraints(maxHeight: 450, maxWidth: 300),
+                          clipBehavior: Clip.antiAlias,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Image.network(_posterUrl!),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          _result,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 40),
+                        const Text(
+                          "Toca para cerrar",
+                          style: TextStyle(color: Colors.white54),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
