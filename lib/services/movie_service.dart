@@ -34,4 +34,15 @@ class MovieService {
       'user_id': userId,
     });
   }
+
+  Future<void> deleteMovie(int id) async {
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) return;
+
+    await _supabase
+        .from('user_movies')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
+  }
 }
