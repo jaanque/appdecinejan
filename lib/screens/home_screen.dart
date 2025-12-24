@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/movie.dart';
 import '../services/movie_service.dart';
+import '../services/tmdb_service.dart';
 import 'movie_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _controller = TextEditingController();
   final MovieService _movieService = MovieService();
+  final TMDBService _tmdbService = TMDBService();
   String _result = '';
   String? _posterUrl;
   bool _isLoading = false;
@@ -184,13 +186,12 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
 
       String? posterPath;
       if (movieName != 'No identificada' && !movieName.contains('No valid response')) {
-        // 3. Fetch Poster from TMDB
-        posterPath = await _fetchPosterFromTMDB(client, movieName);
+        // 3. Fetch Full Details from TMDB using Service
+        final movieDetails = await _tmdbService.searchMovie(movieName);
 
-        // Save to history
-        if (posterPath != null) {
-          final newMovie = Movie(title: movieName, posterUrl: posterPath);
-          await _saveSearchHistory(newMovie);
+        if (movieDetails != null) {
+          posterPath = movieDetails.posterUrl;
+          await _saveSearchHistory(movieDetails);
         }
       }
 
@@ -212,54 +213,6 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
     }
   }
 
-  Future<String?> _fetchPosterFromTMDB(HttpClient client, String query) async {
-    try {
-      debugPrint('Searching TMDB for: $query');
-      // Use search/multi to find movies or TV shows
-      final tmdbUri = Uri.parse(
-          'https://api.themoviedb.org/3/search/multi?query=${Uri.encodeComponent(query)}&include_adult=false&language=en-US&page=1');
-
-      final request = await client.getUrl(tmdbUri);
-      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $_tmdbAccessToken');
-      request.headers.set(HttpHeaders.acceptHeader, 'application/json');
-
-      final response = await request.close();
-      final responseBody = await response.transform(utf8.decoder).join();
-      debugPrint('TMDB Response Code: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final json = jsonDecode(responseBody);
-        debugPrint('TMDB Results count: ${(json['results'] as List?)?.length}');
-
-        if (json['results'] != null && (json['results'] as List).isNotEmpty) {
-          // Filter results to prefer movies or tv shows with posters
-          final results = json['results'] as List;
-
-          // Try to find the first result with a poster path
-          var bestResult = results.firstWhere(
-            (r) => r['poster_path'] != null,
-            orElse: () => null,
-          );
-
-          if (bestResult != null) {
-            final posterPath = bestResult['poster_path'];
-            final url = 'https://image.tmdb.org/t/p/w500$posterPath';
-            debugPrint('Found poster URL: $url');
-            return url;
-          } else {
-             debugPrint('No result had a poster_path.');
-          }
-        } else {
-          debugPrint('TMDB returned no results for query.');
-        }
-      } else {
-         debugPrint('TMDB Error Body: $responseBody');
-      }
-    } catch (e) {
-      debugPrint('Error fetching TMDB poster: $e');
-    }
-    return null;
-  }
 
   void _showInputDialog() {
     showDialog(
