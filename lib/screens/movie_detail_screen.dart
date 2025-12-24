@@ -152,7 +152,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
                       // Overview
                       const Text(
-                        "Sinopsis",
+                        "Overview",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -166,7 +166,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                             child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
                           ))
                         : Text(
-                            _movie.overview ?? "No hay descripción disponible.",
+                            _movie.overview ?? "No description available.",
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.grey.shade600,

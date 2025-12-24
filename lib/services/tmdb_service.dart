@@ -11,7 +11,7 @@ class TMDBService {
     final client = HttpClient();
     try {
       final uri = Uri.parse(
-          'https://api.themoviedb.org/3/search/multi?query=${Uri.encodeComponent(query)}&include_adult=false&language=es-ES&page=1');
+          'https://api.themoviedb.org/3/search/multi?query=${Uri.encodeComponent(query)}&include_adult=false&language=en-US&page=1');
 
       final request = await client.getUrl(uri);
       request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $_accessToken');

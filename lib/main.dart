@@ -104,17 +104,17 @@ class _MainScreenState extends State<MainScreen> {
             NavigationDestination(
               icon: Icon(Icons.home_outlined, color: Colors.grey.shade600),
               selectedIcon: const Icon(Icons.home_filled, color: Colors.black),
-              label: 'Inicio',
+              label: 'Home',
             ),
             NavigationDestination(
               icon: Icon(Icons.explore_outlined, color: Colors.grey.shade600),
               selectedIcon: const Icon(Icons.explore, color: Colors.black),
-              label: 'Explorar',
+              label: 'Explore',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline, color: Colors.grey.shade600),
               selectedIcon: const Icon(Icons.person, color: Colors.black),
-              label: 'Perfil',
+              label: 'Profile',
             ),
           ],
         ),

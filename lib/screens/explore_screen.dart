@@ -9,7 +9,7 @@ class ExploreScreen extends StatelessWidget {
       backgroundColor: Colors.white,
       body: Center(
         child: Text(
-          "Explorar",
+          "Explore",
           style: TextStyle(
             color: Colors.black54,
             fontSize: 18,

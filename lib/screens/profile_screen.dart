@@ -51,12 +51,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (mounted) {
           if (session != null) {
              ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cuenta creada y sesión iniciada!')),
+              const SnackBar(content: Text('Account created and logged in!')),
             );
           } else {
             // Session is null, meaning email verification is likely required
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Cuenta creada! Por favor revisa tu correo para verificar.')),
+              const SnackBar(content: Text('Account created! Please check your email to verify.')),
             );
              setState(() {
               _isLogin = true;
@@ -85,9 +85,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
              _showEmailConfigErrorDialog();
              return;
         } else if (message.contains("User already registered")) {
-             message = "Este usuario ya está registrado. Intenta iniciar sesión.";
+             message = "User already registered. Please sign in.";
         } else if (message.contains("Invalid login credentials")) {
-             message = "Credenciales incorrectas. Verifica tu email y contraseña.";
+             message = "Invalid login credentials. Please check your email and password.";
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -119,7 +119,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa un email válido para restablecer la contraseña.')),
+        const SnackBar(content: Text('Please enter a valid email to reset password.')),
       );
       return;
     }
@@ -128,7 +128,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       await _authService.resetPasswordForEmail(email);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Se ha enviado un correo para restablecer tu contraseña.')),
+          const SnackBar(content: Text('Password reset email sent.')),
         );
       }
     } on AuthException catch (e) {
@@ -140,7 +140,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (e) {
       if (mounted) {
          ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error al solicitar restablecimiento.'), backgroundColor: Colors.redAccent),
+          const SnackBar(content: Text('Error requesting reset.'), backgroundColor: Colors.redAccent),
         );
       }
     }
@@ -150,31 +150,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Error de Configuración de Supabase'),
+        title: const Text('Supabase Configuration Error'),
         content: const SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                  'El servicio de correo de tu proyecto Supabase no está configurado correctamente o ha excedido su límite.'),
+                  'The email service for your Supabase project is not configured correctly or has exceeded its limit.'),
               SizedBox(height: 16),
               Text(
-                  'Para solucionar esto durante el desarrollo y poder registrarte:'),
+                  'To fix this during development and be able to register:'),
               SizedBox(height: 8),
-              Text('1. Ve a tu panel de Supabase.'),
+              Text('1. Go to your Supabase dashboard.'),
               Text('2. Authentication > Providers > Email.'),
-              Text('3. Desactiva "Confirm email".'),
+              Text('3. Disable "Confirm email".'),
               SizedBox(height: 16),
               Text(
-                  'Revisa el archivo SUPABASE_SETUP.md para más detalles.'),
+                  'Check the SUPABASE_SETUP.md file for more details.'),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Entendido'),
+            child: const Text('Understood'),
           ),
         ],
       ),
@@ -221,7 +221,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                user.email ?? 'Usuario',
+                user.email ?? 'User',
                 style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -240,18 +240,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               // Placeholder for future features
               ListTile(
                 leading: const Icon(Icons.favorite_border),
-                title: const Text('Mis Favoritos'),
+                title: const Text('Favorites'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
-                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Próximamente")));
+                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Coming Soon")));
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.settings_outlined),
-                title: const Text('Configuración'),
+                title: const Text('Settings'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () {
-                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Próximamente")));
+                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Coming Soon")));
                 },
               ),
               const Spacer(),
@@ -267,7 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text('Cerrar Sesión'),
+                  child: const Text('Sign Out'),
                 ),
               ),
               const SizedBox(height: 16),
@@ -297,7 +297,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  _isLogin ? 'Bienvenido de nuevo' : 'Crea tu cuenta',
+                  _isLogin ? 'Welcome Back' : 'Create Account',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 24,
@@ -308,8 +308,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 8),
                 Text(
                   _isLogin
-                      ? 'Inicia sesión para guardar tus favoritos.'
-                      : 'Regístrate para empezar a coleccionar.',
+                      ? 'Sign in to save your favorites.'
+                      : 'Sign up to start collecting.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
@@ -332,10 +332,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Por favor ingresa un email';
+                      return 'Please enter an email';
                     }
                     if (!value.contains('@')) {
-                      return 'Ingresa un email válido';
+                      return 'Enter a valid email';
                     }
                     return null;
                   },
@@ -344,7 +344,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
-                    labelText: 'Contraseña',
+                    labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -367,10 +367,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   obscureText: _obscurePassword,
                   validator: (value) {
                      if (value == null || value.isEmpty) {
-                      return 'Por favor ingresa tu contraseña';
+                      return 'Please enter your password';
                     }
                     if (value.length < 6) {
-                      return 'La contraseña debe tener al menos 6 caracteres';
+                      return 'Password must be at least 6 characters';
                     }
                     return null;
                   },
@@ -381,7 +381,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: TextButton(
                       onPressed: _handleResetPassword,
                       child: Text(
-                        '¿Olvidaste tu contraseña?',
+                        'Forgot Password?',
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 13,
@@ -407,7 +407,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       elevation: 0,
                     ),
                     child: Text(
-                      _isLogin ? 'Iniciar Sesión' : 'Registrarse',
+                      _isLogin ? 'Sign In' : 'Sign Up',
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -423,12 +423,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: RichText(
                     text: TextSpan(
                       text: _isLogin
-                          ? '¿No tienes cuenta? '
-                          : '¿Ya tienes cuenta? ',
+                          ? 'No account? '
+                          : 'Already have an account? ',
                       style: TextStyle(color: Colors.grey.shade600),
                       children: [
                         TextSpan(
-                          text: _isLogin ? 'Regístrate' : 'Inicia Sesión',
+                          text: _isLogin ? 'Sign Up' : 'Sign In',
                           style: const TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.bold,

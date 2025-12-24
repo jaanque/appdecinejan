@@ -142,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final groqUri = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
 
       final prompt = '''
-Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu objetivo es identificar de qué película o serie de televisión se trata basándote en el título, descripción y contexto del autor. Responde únicamente con el nombre de la película o serie. RECUERDA. RESPONDE UNICAMENTE CON EL NOMBRE QUE TIENE LA PELICULA EN EEUU Y NINGUNA LETRA MAS. Si no puedes identificarla con seguridad, responde 'No identificada'.
+Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal is to identify the movie or TV show based on the title, description, and context. Respond ONLY with the name of the movie or TV show. REMEMBER: RESPOND ONLY WITH THE OFFICIAL US TITLE AND NO OTHER TEXT. If you cannot identify it with certainty, respond 'No identificada'.
 ''';
 
       final requestBody = {
@@ -272,7 +272,7 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
                   ),
                 ),
                 child: const Text(
-                  'Buscar',
+                  'Search',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -364,16 +364,16 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
                       children: [
                         _buildMenuButton(
                           icon: Icons.add,
-                          label: 'Nuevo',
+                          label: 'New',
                           onTap: _showInputDialog,
                         ),
                         const SizedBox(width: 12),
                         _buildMenuButton(
                           icon: Icons.collections_bookmark_outlined,
-                          label: 'Colecciones',
+                          label: 'Collections',
                           onTap: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Próximamente')),
+                              const SnackBar(content: Text('Coming Soon')),
                             );
                           },
                         ),
@@ -503,7 +503,7 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
                         ),
                         const SizedBox(height: 24),
                         const Text(
-                          "¿Viste una peli en TikTok?",
+                          "Seen a movie on TikTok?",
                           style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -513,7 +513,7 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          "Descubre el nombre al instante.",
+                          "Find the title instantly.",
                           style: TextStyle(
                             fontSize: 16,
                             color: Colors.grey.shade500,
@@ -534,7 +534,7 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
                             ),
                           ),
                           child: const Text(
-                            'Identificar Película',
+                            'Identify Movie',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -586,7 +586,7 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
                         ),
                         const SizedBox(height: 40),
                         const Text(
-                          "Toca para cerrar",
+                          "Tap to close",
                           style: TextStyle(color: Colors.white54),
                         ),
                       ],
