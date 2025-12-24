@@ -79,53 +79,90 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Hero(
-                    tag: 'movie_poster_${widget.movie.title}',
-                    child: Image.network(
-                      _movie.posterUrl,
-                      fit: BoxFit.cover,
+                  // Prioritize Backdrop URL if available, else use Poster
+                  Image.network(
+                    _movie.backdropUrl ?? _movie.posterUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Colors.grey.shade900,
                     ),
                   ),
+                  // Gradient overlay for better text readability
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.8),
+                          Colors.black.withOpacity(0.1),
+                          Colors.black.withOpacity(0.9),
                         ],
-                        stops: const [0.5, 1.0],
+                        stops: const [0.3, 1.0],
                       ),
                     ),
                   ),
+                  // Floating Poster and Title/Actions
                   Positioned(
                     bottom: 20,
                     left: 20,
                     right: 20,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        if (_movie.tagline != null && _movie.tagline!.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: Text(
-                              _movie.tagline!,
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
-                                fontStyle: FontStyle.italic,
-                                fontSize: 16,
+                        // Small floating poster
+                        Hero(
+                          tag: 'movie_poster_${widget.movie.title}',
+                          child: Container(
+                            width: 100,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.5),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                              image: DecorationImage(
+                                image: NetworkImage(_movie.posterUrl),
+                                fit: BoxFit.cover,
                               ),
                             ),
                           ),
-                        Text(
-                          _movie.title,
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            height: 1.1,
+                        ),
+                        const SizedBox(width: 16),
+                        // Title and Tagline
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _movie.title,
+                                style: const TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  height: 1.1,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (_movie.tagline != null && _movie.tagline!.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  _movie.tagline!,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontStyle: FontStyle.italic,
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ],
                           ),
                         ),
                       ],
@@ -143,6 +180,41 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Action Buttons Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildActionButton(
+                            icon: Icons.bookmark_add_outlined,
+                            label: 'Add to List',
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Added to Collection')),
+                              );
+                            },
+                          ),
+                          _buildActionButton(
+                            icon: Icons.star_outline_rounded,
+                            label: 'Rate',
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Rating feature coming soon')),
+                              );
+                            },
+                          ),
+                          _buildActionButton(
+                            icon: Icons.share_outlined,
+                            label: 'Share',
+                            onTap: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Share feature coming soon')),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+
                       // Metadata Row (Rating, Year, Runtime, Genres)
                       SingleChildScrollView(
                         scrollDirection: Axis.horizontal,
@@ -262,6 +334,34 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            Icon(icon, color: Colors.grey.shade800, size: 28),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
