@@ -64,7 +64,11 @@ on public.collections for update
 using ( auth.uid() = user_id );
 
 -- -----------------------------------------------------------------------------
--- Refresh PostgREST Schema Cache
+-- Permissions & Cache Refresh
 -- -----------------------------------------------------------------------------
--- This is required for the API to recognize the newly created tables immediately.
+-- Explicitly grant permissions to ensure the table is accessible
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.collections TO anon, authenticated, service_role;
+
+-- Reload the PostgREST schema cache to recognize the new table
 NOTIFY pgrst, 'reload schema';

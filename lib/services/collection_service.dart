@@ -13,7 +13,7 @@ class CollectionService {
       await _client.from('collections').insert({
         'user_id': user.id,
         'name': name,
-      });
+      }).select();
     } on PostgrestException catch (e) {
       _handlePostgrestError(e);
       rethrow;
