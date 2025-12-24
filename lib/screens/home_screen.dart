@@ -349,7 +349,7 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
               slivers: [
                 const SliverToBoxAdapter(child: SizedBox(height: 60)), // Space for top buttons if needed
                 SliverPadding(
-                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 100), // Bottom padding for floating nav
+                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
                   sliver: SliverGrid(
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,

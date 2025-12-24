@@ -270,7 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   child: const Text('Cerrar Sesión'),
                 ),
               ),
-              const SizedBox(height: 80), // Space for floating nav
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -438,7 +438,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                 ),
-                 const SizedBox(height: 60), // Space for floating nav
+                 const SizedBox(height: 24),
               ],
             ),
           ),
