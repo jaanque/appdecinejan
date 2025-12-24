@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/movie.dart';
 import '../services/tmdb_service.dart';
+import 'package:intl/intl.dart';
 
 class MovieDetailScreen extends StatefulWidget {
   final Movie movie;
@@ -24,9 +25,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   }
 
   Future<void> _fetchFullDetails() async {
-    // If we are missing details (like runtime or full overview if it was truncated), try to fetch them.
-    // Checking runtime or genres is a good proxy for "full details loaded".
-    if (_movie.runtime == null || _movie.genres == null) {
+    // Check if we have extended details (e.g. cast) to decide if we need to fetch
+    if (_movie.cast == null) {
       setState(() {
         _isLoading = true;
       });
@@ -35,7 +35,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
       if (mounted && fullMovie != null) {
         setState(() {
-          _movie = fullMovie; // Update with full details
+          _movie = fullMovie;
           _isLoading = false;
         });
       } else if (mounted) {
@@ -54,6 +54,12 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       return '${hours}h ${mins}m';
     }
     return '${mins}m';
+  }
+
+  String _formatCurrency(int? amount) {
+    if (amount == null || amount == 0) return 'N/A';
+    final formatter = NumberFormat.currency(symbol: '\$', decimalDigits: 0);
+    return formatter.format(amount);
   }
 
   @override
@@ -306,13 +312,13 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                       const Text(
                         "Overview",
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
                       ),
                       const SizedBox(height: 12),
-                      _isLoading
+                      _isLoading && _movie.overview == null
                         ? const Center(child: Padding(
                             padding: EdgeInsets.all(20.0),
                             child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
@@ -322,15 +328,131 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.grey.shade600,
-                              height: 1.6,
+                              height: 1.5,
                             ),
                           ),
 
+                      const SizedBox(height: 24),
+
+                      // Cast Section
+                      if (_movie.cast != null && _movie.cast!.isNotEmpty) ...[
+                        const Text(
+                          "Top Cast",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 120,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _movie.cast!.length,
+                            itemBuilder: (context, index) {
+                              final actor = _movie.cast![index];
+                              return Container(
+                                width: 80,
+                                margin: const EdgeInsets.only(right: 12),
+                                child: Column(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 30,
+                                      backgroundColor: Colors.grey.shade200,
+                                      backgroundImage: actor.profileUrl != null
+                                          ? NetworkImage(actor.profileUrl!)
+                                          : null,
+                                      child: actor.profileUrl == null
+                                          ? const Icon(Icons.person, color: Colors.grey)
+                                          : null,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      actor.name,
+                                      maxLines: 2,
+                                      textAlign: TextAlign.center,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+
+                      // Information Section (Status, Budget, Revenue)
+                      if (_movie.status != null || _movie.budget != null) ...[
+                        const Text(
+                          "Information",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: Column(
+                            children: [
+                              if (_movie.status != null)
+                                _buildInfoRow("Status", _movie.status!),
+                              if (_movie.budget != null && _movie.budget! > 0) ...[
+                                const Divider(),
+                                _buildInfoRow("Budget", _formatCurrency(_movie.budget)),
+                              ],
+                              if (_movie.revenue != null && _movie.revenue! > 0) ...[
+                                const Divider(),
+                                _buildInfoRow("Revenue", _formatCurrency(_movie.revenue)),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 40),
                     ],
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.black87,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
