@@ -4,7 +4,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'screens/home_screen.dart';
 import 'screens/explore_screen.dart';
 import 'screens/profile_screen.dart';
-import 'widgets/floating_bottom_navigation_bar.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,27 +72,52 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Content
-          IndexedStack(
-            index: _selectedIndex,
-            children: _screens,
-          ),
-
-          // Floating Navigation Bar
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              child: FloatingBottomNavigationBar(
-                selectedIndex: _selectedIndex,
-                onItemTapped: _onItemTapped,
-              ),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
+      bottomNavigationBar: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          labelTextStyle: MaterialStateProperty.resolveWith((states) {
+            if (states.contains(MaterialState.selected)) {
+              return const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+              );
+            }
+            return TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.normal,
+              color: Colors.grey.shade600,
+            );
+          }),
+        ),
+        child: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: _onItemTapped,
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          indicatorColor: Colors.transparent, // Minimalist: No heavy indicator blob, just icon color change
+          elevation: 0,
+          destinations: [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined, color: Colors.grey.shade600),
+              selectedIcon: const Icon(Icons.home_filled, color: Colors.black),
+              label: 'Inicio',
             ),
-          ),
-        ],
+            NavigationDestination(
+              icon: Icon(Icons.explore_outlined, color: Colors.grey.shade600),
+              selectedIcon: const Icon(Icons.explore, color: Colors.black),
+              label: 'Explorar',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline, color: Colors.grey.shade600),
+              selectedIcon: const Icon(Icons.person, color: Colors.black),
+              label: 'Perfil',
+            ),
+          ],
+        ),
       ),
     );
   }
