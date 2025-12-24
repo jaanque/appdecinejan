@@ -82,7 +82,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         // Handle specific known Supabase email errors
         if (message.contains("Error sending verification email") ||
             message.contains("Error sending confirmation email")) {
-             message = "No se pudo enviar el correo de confirmación. Por favor intenta más tarde.";
+             _showEmailConfigErrorDialog();
+             return;
         } else if (message.contains("User already registered")) {
              message = "Este usuario ya está registrado. Intenta iniciar sesión.";
         }
@@ -110,6 +111,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
       }
     }
+  }
+
+  void _showEmailConfigErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Error de Configuración de Supabase'),
+        content: const SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                  'El servicio de correo de tu proyecto Supabase no está configurado correctamente o ha excedido su límite.'),
+              SizedBox(height: 16),
+              Text(
+                  'Para solucionar esto durante el desarrollo y poder registrarte:'),
+              SizedBox(height: 8),
+              Text('1. Ve a tu panel de Supabase.'),
+              Text('2. Authentication > Providers > Email.'),
+              Text('3. Desactiva "Confirm email".'),
+              SizedBox(height: 16),
+              Text(
+                  'Revisa el archivo SUPABASE_SETUP.md para más detalles.'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _signOut() async {
