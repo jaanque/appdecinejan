@@ -20,11 +20,13 @@ class AuthService {
   Future<Session?> signUp({
     required String email,
     required String password,
+    String? emailRedirectTo,
   }) async {
     try {
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
+        emailRedirectTo: emailRedirectTo,
       );
 
       // If auto-confirm is enabled, session might be available immediately
@@ -60,5 +62,10 @@ class AuthService {
   /// Sign Out
   Future<void> signOut() async {
     await _supabase.auth.signOut();
+  }
+
+  /// Send Password Reset Email
+  Future<void> resetPasswordForEmail(String email) async {
+    await _supabase.auth.resetPasswordForEmail(email);
   }
 }
