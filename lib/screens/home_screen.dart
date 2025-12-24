@@ -91,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
       } catch (e) {
         debugPrint('Error saving to Supabase: $e');
          if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error guardando en la nube")));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error saving to cloud")));
         }
       }
     } else {
@@ -105,6 +105,59 @@ class _HomeScreenState extends State<HomeScreen> {
       final String historyJson = jsonEncode(_searchHistory.map((m) => m.toJson()).toList());
       await prefs.setString('search_history', historyJson);
     }
+  }
+
+  Future<void> _deleteMovie(Movie movie) async {
+    final user = Supabase.instance.client.auth.currentUser;
+
+    if (user != null && movie.id != null) {
+      // Delete from Supabase
+      try {
+        await _movieService.deleteMovie(movie.id!);
+        await _loadSearchHistory(); // Refresh list
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error deleting movie')),
+          );
+        }
+      }
+    } else {
+      // Delete from Local Storage
+      setState(() {
+        _searchHistory.removeWhere((m) => m.title == movie.title);
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final String historyJson = jsonEncode(_searchHistory.map((m) => m.toJson()).toList());
+      await prefs.setString('search_history', historyJson);
+    }
+  }
+
+  void _showOptionsDialog(Movie movie) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('Delete', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  Navigator.pop(context); // Close bottom sheet
+                  _deleteMovie(movie);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _processUrl() async {
@@ -431,6 +484,9 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                                     builder: (context) => MovieDetailScreen(movie: movie),
                                   ),
                                 );
+                              },
+                              onLongPress: () {
+                                _showOptionsDialog(movie);
                               },
                               child: Stack(
                                 fit: StackFit.expand,
