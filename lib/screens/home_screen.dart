@@ -391,7 +391,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: Text(
-                        "Recent History",
+                        "Collection",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
