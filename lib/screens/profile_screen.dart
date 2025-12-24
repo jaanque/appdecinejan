@@ -61,10 +61,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     } on AuthException catch (error) {
       if (mounted) {
-        // Customize error messages if needed, otherwise use Supabase's
         String message = error.message;
-        if (message.contains("Error sending verification email")) {
-             message = "Error al enviar el correo. Contacta soporte o verifica tu configuración.";
+
+        // Attempt to extract cleaner message from JSON if it looks like one
+        // Example: {"code":"unexpected_failure","message":"Error sending confirmation email"}
+        if (message.startsWith('{') && message.contains('"message":')) {
+          try {
+             // Simple regex extraction since we don't want to import dart:convert just for this catch block if not needed,
+             // or better yet, just look for the substring.
+             final RegExp regex = RegExp(r'"message":"([^"]+)"');
+             final match = regex.firstMatch(message);
+             if (match != null && match.groupCount >= 1) {
+               message = match.group(1) ?? message;
+             }
+          } catch (_) {
+            // parsing failed, keep original
+          }
+        }
+
+        // Handle specific known Supabase email errors
+        if (message.contains("Error sending verification email") ||
+            message.contains("Error sending confirmation email")) {
+             message = "No se pudo enviar el correo de confirmación. Por favor intenta más tarde.";
+        } else if (message.contains("User already registered")) {
+             message = "Este usuario ya está registrado. Intenta iniciar sesión.";
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
