@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/movie.dart';
 import '../services/movie_service.dart';
+import 'movie_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -451,49 +452,61 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
                             ],
                           ),
                           clipBehavior: Clip.antiAlias,
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image.network(
-                                movie.posterUrl,
-                                fit: BoxFit.cover,
-                                errorBuilder: (ctx, err, stack) => Container(
-                                  color: Colors.grey[200],
-                                  child: const Center(
-                                    child: Icon(Icons.broken_image, color: Colors.grey),
-                                  ),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => MovieDetailScreen(movie: movie),
                                 ),
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                left: 0,
-                                right: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.bottomCenter,
-                                      end: Alignment.topCenter,
-                                      colors: [
-                                        Colors.black.withOpacity(0.8),
-                                        Colors.transparent,
-                                      ],
+                              );
+                            },
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Hero(
+                                  tag: 'movie_poster_${movie.title}',
+                                  child: Image.network(
+                                    movie.posterUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (ctx, err, stack) => Container(
+                                      color: Colors.grey[200],
+                                      child: const Center(
+                                        child: Icon(Icons.broken_image, color: Colors.grey),
+                                      ),
                                     ),
                                   ),
-                                  child: Text(
-                                    movie.title,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  left: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.bottomCenter,
+                                        end: Alignment.topCenter,
+                                        colors: [
+                                          Colors.black.withOpacity(0.8),
+                                          Colors.transparent,
+                                        ],
+                                      ),
                                     ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    textAlign: TextAlign.center,
+                                    child: Text(
+                                      movie.title,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         );
                       },
