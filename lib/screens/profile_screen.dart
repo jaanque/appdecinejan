@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -9,7 +10,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _supabase = Supabase.instance.client;
+  final AuthService _authService = AuthService();
   bool _isLogin = true; // Toggle between Login and Sign Up
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -32,29 +33,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       if (_isLogin) {
-        await _supabase.auth.signInWithPassword(
+        await _authService.signIn(
           email: email,
           password: password,
         );
       } else {
-        await _supabase.auth.signUp(
+        final session = await _authService.signUp(
           email: email,
           password: password,
         );
+
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cuenta creada! Por favor inicia sesión.')),
-          );
-          setState(() {
-            _isLogin = true;
-          });
+          if (session != null) {
+             ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Cuenta creada y sesión iniciada!')),
+            );
+          } else {
+            // Session is null, meaning email verification is likely required
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Cuenta creada! Por favor revisa tu correo para verificar.')),
+            );
+             setState(() {
+              _isLogin = true;
+            });
+          }
         }
       }
     } on AuthException catch (error) {
       if (mounted) {
+        // Customize error messages if needed, otherwise use Supabase's
+        String message = error.message;
+        if (message.contains("Error sending verification email")) {
+             message = "Error al enviar el correo. Contacta soporte o verifica tu configuración.";
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error.message),
+            content: Text(message),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -62,8 +77,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Ocurrió un error inesperado'),
+          SnackBar(
+            content: Text('Error inesperado: ${error.toString()}'),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -78,16 +93,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _signOut() async {
-    await _supabase.auth.signOut();
+    await _authService.signOut();
   }
 
   @override
   Widget build(BuildContext context) {
     // Listen to Auth State
     return StreamBuilder<AuthState>(
-      stream: _supabase.auth.onAuthStateChange,
+      stream: _authService.onAuthStateChange,
       builder: (context, snapshot) {
-        final session = _supabase.auth.currentSession;
+        final session = _authService.currentSession;
 
         // If logged in, show profile
         if (session != null) {
