@@ -1,0 +1,49 @@
+import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../models/collection.dart';
+
+class CollectionService {
+  final SupabaseClient _client = Supabase.instance.client;
+
+  Future<void> createCollection(String name) async {
+    final user = _client.auth.currentUser;
+    if (user == null) throw Exception('User not logged in');
+
+    try {
+      await _client.from('collections').insert({
+        'user_id': user.id,
+        'name': name,
+      });
+    } catch (e) {
+      debugPrint('Error creating collection: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Collection>> getCollections() async {
+    final user = _client.auth.currentUser;
+    if (user == null) return [];
+
+    try {
+      final response = await _client
+          .from('collections')
+          .select()
+          .order('created_at', ascending: false);
+
+      final List<dynamic> data = response as List<dynamic>;
+      return data.map((json) => Collection.fromJson(json)).toList();
+    } catch (e) {
+      debugPrint('Error fetching collections: $e');
+      return [];
+    }
+  }
+
+  Future<void> deleteCollection(int id) async {
+    try {
+      await _client.from('collections').delete().eq('id', id);
+    } catch (e) {
+      debugPrint('Error deleting collection: $e');
+      rethrow;
+    }
+  }
+}
