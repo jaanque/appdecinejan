@@ -53,7 +53,7 @@ class AuthService {
     );
 
     if (response.session == null) {
-       throw const AuthException('Error al iniciar sesión: No se pudo obtener la sesión.');
+       throw const AuthException('Error signing in: Could not obtain session.');
     }
 
     return response.session!;
