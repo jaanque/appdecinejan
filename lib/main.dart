@@ -40,10 +40,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _controller = TextEditingController();
   String _result = '';
+  String? _posterUrl;
   bool _isLoading = false;
 
-  // API Key provided by the user
+  // API Key provided by the user (Groq)
   final String _apiKey = dotenv.env['GROQ_API_KEY'] ?? '';
+
+  // TMDB Access Token
+  final String _tmdbAccessToken = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI4MGQwM2U5NTkyOTE2ZmJkYzEzZDIxZWRkYWY1ODg4MiIsIm5iZiI6MTc2NjM5NjY5OS42MDgsInN1YiI6IjY5NDkxMzFiYWY0NzUyMWNlZTA3MzVkOCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.PrNgmsWb8e9vBRskKUbNFR3FwxGpRvbfu_dgSZRj-vI';
 
   Future<void> _processUrl() async {
     final url = _controller.text.trim();
@@ -52,6 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _isLoading = true;
       _result = '';
+      _posterUrl = null;
     });
 
     final client = HttpClient();
@@ -101,8 +106,6 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
 
       final groqJson = jsonDecode(groqResponseBody);
 
-      // Extract text from Groq response structure
-      // { "choices": [ { "message": { "content": "Result" } } ] }
       String? aiText;
       if (groqJson['choices'] != null &&
           (groqJson['choices'] as List).isNotEmpty) {
@@ -113,8 +116,17 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
         }
       }
 
+      final movieName = aiText ?? 'No valid response from AI';
+
+      String? posterPath;
+      if (movieName != 'No identificada' && !movieName.contains('No valid response')) {
+        // 3. Fetch Poster from TMDB
+        posterPath = await _fetchPosterFromTMDB(client, movieName);
+      }
+
       setState(() {
-        _result = aiText ?? 'No valid response from AI';
+        _result = movieName;
+        _posterUrl = posterPath;
       });
 
     } catch (e) {
@@ -129,11 +141,35 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
     }
   }
 
-  void _showInputDialog() {
-    // Clear controller when opening dialog to allow new input?
-    // Or keep previous? Let's keep previous for convenience, but select all?
-    // User asked for "opens a field to put the link".
+  Future<String?> _fetchPosterFromTMDB(HttpClient client, String query) async {
+    try {
+      final tmdbUri = Uri.parse(
+          'https://api.themoviedb.org/3/search/multi?query=${Uri.encodeComponent(query)}&include_adult=false&language=en-US&page=1');
 
+      final request = await client.getUrl(tmdbUri);
+      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $_tmdbAccessToken');
+      request.headers.set(HttpHeaders.acceptHeader, 'application/json');
+
+      final response = await request.close();
+      if (response.statusCode == 200) {
+        final responseBody = await response.transform(utf8.decoder).join();
+        final json = jsonDecode(responseBody);
+
+        if (json['results'] != null && (json['results'] as List).isNotEmpty) {
+          final firstResult = json['results'][0];
+          final posterPath = firstResult['poster_path'];
+          if (posterPath != null) {
+            return 'https://image.tmdb.org/t/p/w500$posterPath';
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching TMDB poster: $e');
+    }
+    return null;
+  }
+
+  void _showInputDialog() {
     showDialog(
       context: context,
       builder: (context) {
@@ -217,19 +253,74 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
                       strokeWidth: 2,
                     )
                   : _result.isNotEmpty
-                      ? AnimatedOpacity(
-                          opacity: 1.0,
-                          duration: const Duration(milliseconds: 500),
-                          child: Text(
-                            _result,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w300,
-                              color: Colors.black87,
-                              letterSpacing: -0.5,
-                              height: 1.2,
-                            ),
+                      ? SingleChildScrollView(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              if (_posterUrl != null)
+                                Container(
+                                  constraints: const BoxConstraints(
+                                    maxHeight: 400,
+                                    maxWidth: 300,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(16),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 20,
+                                        offset: const Offset(0, 10),
+                                      ),
+                                    ],
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: Image.network(
+                                    _posterUrl!,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Container(
+                                        height: 300,
+                                        width: 200,
+                                        color: Colors.grey[100],
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                            value: loadingProgress.expectedTotalBytes != null
+                                                ? loadingProgress.cumulativeBytesLoaded /
+                                                    loadingProgress.expectedTotalBytes!
+                                                : null,
+                                            color: Colors.black,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        height: 300,
+                                        width: 200,
+                                        color: Colors.grey[200],
+                                        child: const Icon(Icons.broken_image, color: Colors.grey),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              const SizedBox(height: 32),
+                              AnimatedOpacity(
+                                opacity: 1.0,
+                                duration: const Duration(milliseconds: 500),
+                                child: Text(
+                                  _result,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                    letterSpacing: -0.5,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         )
                       : null, // Blank initially
@@ -250,7 +341,6 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
                   color: Colors.black87,
                   tooltip: 'Agregar Link',
                   style: IconButton.styleFrom(
-                     // Optional: Add a subtle background or keep it plain
                      shape: const CircleBorder(),
                      padding: const EdgeInsets.all(8),
                   ),
