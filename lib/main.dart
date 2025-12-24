@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
- Future<void> main() async {
-   await dotenv.load(fileName: ".env");
+Future<void> main() async {
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 
@@ -15,9 +15,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'TikTok Movie Finder',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.grey,
+          brightness: Brightness.light,
+          primary: Colors.black,
+        ),
         useMaterial3: true,
+        scaffoldBackgroundColor: Colors.white,
       ),
       home: const HomeScreen(),
     );
@@ -123,63 +129,136 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
     }
   }
 
+  void _showInputDialog() {
+    // Clear controller when opening dialog to allow new input?
+    // Or keep previous? Let's keep previous for convenience, but select all?
+    // User asked for "opens a field to put the link".
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          contentPadding: const EdgeInsets.all(24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                "Link",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _controller,
+                autofocus: true,
+                style: const TextStyle(color: Colors.black87),
+                decoration: InputDecoration(
+                  hintText: 'https://www.tiktok.com/...',
+                  hintStyle: TextStyle(color: Colors.grey[400]),
+                  filled: true,
+                  fillColor: const Color(0xFFF5F5F5),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+                onSubmitted: (_) {
+                  Navigator.of(context).pop();
+                  _processUrl();
+                },
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _processUrl();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Buscar',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('TikTok Movie Finder'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: _controller,
-              decoration: const InputDecoration(
-                labelText: 'URL de TikTok',
-                border: OutlineInputBorder(),
-                hintText: 'https://www.tiktok.com/@user/video/...',
-              ),
+      body: Stack(
+        children: [
+          // Center Content (Result or Loading)
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32.0),
+              child: _isLoading
+                  ? const CircularProgressIndicator(
+                      color: Colors.black,
+                      strokeWidth: 2,
+                    )
+                  : _result.isNotEmpty
+                      ? AnimatedOpacity(
+                          opacity: 1.0,
+                          duration: const Duration(milliseconds: 500),
+                          child: Text(
+                            _result,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w300,
+                              color: Colors.black87,
+                              letterSpacing: -0.5,
+                              height: 1.2,
+                            ),
+                          ),
+                        )
+                      : null, // Blank initially
             ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _processUrl,
-                child: _isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Buscar', style: TextStyle(fontSize: 18)),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey[100],
-                ),
-                child: SingleChildScrollView(
-                  child: SelectableText(
-                    _result.isEmpty ? 'El resultado aparecerá aquí...' : _result,
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: _result.isEmpty ? Colors.grey : Colors.black,
-                      fontWeight: _result.isEmpty ? FontWeight.bold : FontWeight.bold,
-                    ),
+          ),
+
+          // Top Right + Button
+          Positioned(
+            top: 0,
+            right: 0,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(12.0),
+                child: IconButton(
+                  onPressed: _showInputDialog,
+                  icon: const Icon(Icons.add),
+                  iconSize: 32,
+                  color: Colors.black87,
+                  tooltip: 'Agregar Link',
+                  style: IconButton.styleFrom(
+                     // Optional: Add a subtle background or keep it plain
+                     shape: const CircleBorder(),
+                     padding: const EdgeInsets.all(8),
                   ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
