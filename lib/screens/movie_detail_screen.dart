@@ -24,8 +24,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   }
 
   Future<void> _fetchFullDetails() async {
-    // If we are missing details, try to fetch them
-    if (_movie.overview == null || _movie.overview!.isEmpty) {
+    // If we are missing details (like runtime or full overview if it was truncated), try to fetch them.
+    // Checking runtime or genres is a good proxy for "full details loaded".
+    if (_movie.runtime == null || _movie.genres == null) {
       setState(() {
         _isLoading = true;
       });
@@ -45,6 +46,16 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     }
   }
 
+  String _formatRuntime(int? minutes) {
+    if (minutes == null || minutes == 0) return '';
+    final int hours = minutes ~/ 60;
+    final int mins = minutes % 60;
+    if (hours > 0) {
+      return '${hours}h ${mins}m';
+    }
+    return '${mins}m';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,14 +63,14 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 400,
+            expandedHeight: 450,
             pinned: true,
             backgroundColor: Colors.white,
             elevation: 0,
             leading: Container(
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.5),
+                color: Colors.white.withOpacity(0.8),
                 shape: BoxShape.circle,
               ),
               child: const BackButton(color: Colors.black),
@@ -69,13 +80,12 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                 fit: StackFit.expand,
                 children: [
                   Hero(
-                    tag: 'movie_poster_${widget.movie.title}', // Use original tag for transition
+                    tag: 'movie_poster_${widget.movie.title}',
                     child: Image.network(
                       _movie.posterUrl,
                       fit: BoxFit.cover,
                     ),
                   ),
-                  // Gradient overlay for text readability
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -83,10 +93,42 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.7),
+                          Colors.black.withOpacity(0.8),
                         ],
-                        stops: const [0.6, 1.0],
+                        stops: const [0.5, 1.0],
                       ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 20,
+                    left: 20,
+                    right: 20,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_movie.tagline != null && _movie.tagline!.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Text(
+                              _movie.tagline!,
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontStyle: FontStyle.italic,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ),
+                        Text(
+                          _movie.title,
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            height: 1.1,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -101,60 +143,98 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title
-                      Text(
-                        _movie.title,
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                          height: 1.1,
+                      // Metadata Row (Rating, Year, Runtime, Genres)
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            if (_movie.voteAverage != null && _movie.voteAverage! > 0) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.star_rounded, color: Colors.amber, size: 20),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _movie.voteAverage!.toStringAsFixed(1),
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                            if (_movie.releaseDate != null && _movie.releaseDate!.isNotEmpty) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  _movie.releaseDate!.split('-')[0],
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade800,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                            if (_movie.runtime != null && _movie.runtime! > 0) ...[
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  _formatRuntime(_movie.runtime),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade800,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                            ],
+                          ],
                         ),
                       ),
                       const SizedBox(height: 16),
-
-                      // Metadata Row (Rating, Year)
-                      Row(
-                        children: [
-                          if (_movie.voteAverage != null && _movie.voteAverage! > 0) ...[
-                            const Icon(Icons.star_rounded, color: Colors.amber, size: 24),
-                            const SizedBox(width: 4),
-                            Text(
-                              _movie.voteAverage!.toStringAsFixed(1),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                          ],
-                          if (_movie.releaseDate != null && _movie.releaseDate!.isNotEmpty) ...[
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                _movie.releaseDate!.split('-')[0], // Year only
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey.shade800,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                      // Genres
+                      if (_movie.genres != null && _movie.genres!.isNotEmpty)
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _movie.genres!.map((genre) {
+                            return Chip(
+                              label: Text(genre),
+                              labelStyle: const TextStyle(fontSize: 12),
+                              backgroundColor: Colors.white,
+                              side: BorderSide(color: Colors.grey.shade300),
+                              padding: EdgeInsets.zero,
+                              visualDensity: VisualDensity.compact,
+                            );
+                          }).toList(),
+                        ),
                       const SizedBox(height: 24),
 
                       // Overview
                       const Text(
                         "Overview",
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.black87,
                         ),
@@ -170,7 +250,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.grey.shade600,
-                              height: 1.5,
+                              height: 1.6,
                             ),
                           ),
 
