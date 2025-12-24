@@ -329,6 +329,40 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
     );
   }
 
+  Widget _buildMenuButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: 120, // Fixed width for uniformity
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 28, color: Colors.black87),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -347,7 +381,30 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
             // Grid of Saved Movies
             CustomScrollView(
               slivers: [
-                const SliverToBoxAdapter(child: SizedBox(height: 60)), // Space for top buttons if needed
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildMenuButton(
+                          icon: Icons.add,
+                          label: 'Nuevo',
+                          onTap: _showInputDialog,
+                        ),
+                        _buildMenuButton(
+                          icon: Icons.collections_bookmark_outlined,
+                          label: 'Colecciones',
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Próximamente')),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
                 SliverPadding(
                   padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
                   sliver: SliverGrid(
@@ -481,29 +538,6 @@ Analiza el siguiente JSON de metadatos de un vídeo de TikTok: $jsonString. Tu o
                 ),
               ),
             ),
-
-          // Top Right + Button
-          Positioned(
-            top: 0,
-            right: 0,
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: IconButton(
-                  onPressed: _showInputDialog,
-                  icon: const Icon(Icons.add),
-                  iconSize: 32,
-                  color: Colors.black87,
-                  tooltip: 'Agregar Link',
-                  style: IconButton.styleFrom(
-                     shape: const CircleBorder(),
-                     backgroundColor: Colors.white.withOpacity(0.8), // Slight background for visibility over grid
-                     padding: const EdgeInsets.all(8),
-                  ),
-                ),
-              ),
-            ),
-          ),
 
           // Result Modal / Overlay if result is present?
           // Actually, if we add to grid, we might just scroll to top or show a dialog.
