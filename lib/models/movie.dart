@@ -1,3 +1,5 @@
+import 'cast_member.dart';
+
 class Movie {
   final int? id; // Supabase ID
   final int? tmdbId; // TMDB ID
@@ -14,6 +16,12 @@ class Movie {
   final List<String>? genres;
   final String? tagline;
 
+  // More details
+  final String? status;
+  final int? budget;
+  final int? revenue;
+  final List<CastMember>? cast;
+
   Movie({
     this.id,
     this.tmdbId,
@@ -27,6 +35,10 @@ class Movie {
     this.runtime,
     this.genres,
     this.tagline,
+    this.status,
+    this.budget,
+    this.revenue,
+    this.cast,
   });
 
   // Local Storage (SharedPreferences)
@@ -42,6 +54,10 @@ class Movie {
         'runtime': runtime,
         'genres': genres,
         'tagline': tagline,
+        'status': status,
+        'budget': budget,
+        'revenue': revenue,
+        'cast': cast?.map((c) => c.toJson()).toList(),
       };
 
   factory Movie.fromJson(Map<String, dynamic> json) {
@@ -57,6 +73,10 @@ class Movie {
       runtime: json['runtime'] as int?,
       genres: (json['genres'] as List?)?.map((e) => e as String).toList(),
       tagline: json['tagline'] as String?,
+      status: json['status'] as String?,
+      budget: json['budget'] as int?,
+      revenue: json['revenue'] as int?,
+      cast: (json['cast'] as List?)?.map((e) => CastMember.fromJson(e)).toList(),
     );
   }
 
@@ -87,6 +107,10 @@ class Movie {
     int? runtime,
     List<String>? genres,
     String? tagline,
+    String? status,
+    int? budget,
+    int? revenue,
+    List<CastMember>? cast,
   }) {
     return Movie(
       id: id ?? this.id,
@@ -101,6 +125,10 @@ class Movie {
       runtime: runtime ?? this.runtime,
       genres: genres ?? this.genres,
       tagline: tagline ?? this.tagline,
+      status: status ?? this.status,
+      budget: budget ?? this.budget,
+      revenue: revenue ?? this.revenue,
+      cast: cast ?? this.cast,
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:io';
 import 'dart:convert';
 import '../models/movie.dart';
+import '../models/cast_member.dart';
 
 class TMDBService {
   final String _accessToken = dotenv.env['TMDB_ACCESS_TOKEN'] ?? '';
@@ -55,8 +56,9 @@ class TMDBService {
     final client = HttpClient();
     try {
       final type = movie.mediaType == 'tv' ? 'tv' : 'movie';
+      // Append credits to get cast info in one go
       final uri = Uri.parse(
-          'https://api.themoviedb.org/3/$type/${movie.tmdbId}?language=en-US');
+          'https://api.themoviedb.org/3/$type/${movie.tmdbId}?language=en-US&append_to_response=credits');
 
       final request = await client.getUrl(uri);
       request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $_accessToken');
@@ -75,13 +77,35 @@ class TMDBService {
             .toList() ?? [];
         final String? tagline = json['tagline'];
 
+        final String? status = json['status'];
+        final int? budget = json['budget'];
+        final int? revenue = json['revenue'];
+
+        List<CastMember> cast = [];
+        if (json['credits'] != null && json['credits']['cast'] != null) {
+          final castList = json['credits']['cast'] as List;
+          // Take top 10 actors
+          cast = castList.take(10).map((c) {
+            final String? path = c['profile_path'];
+            return CastMember(
+              name: c['name'] ?? 'Unknown',
+              character: c['character'] ?? 'Unknown',
+              profileUrl: path != null ? 'https://image.tmdb.org/t/p/w185$path' : null,
+            );
+          }).toList();
+        }
+
         return movie.copyWith(
           runtime: runtime,
           genres: genres,
           tagline: tagline,
-          overview: json['overview'] ?? movie.overview, // Update overview in case search result was truncated
+          overview: json['overview'] ?? movie.overview,
           voteAverage: (json['vote_average'] as num?)?.toDouble() ?? movie.voteAverage,
           releaseDate: json['release_date'] ?? json['first_air_date'] ?? movie.releaseDate,
+          status: status,
+          budget: budget,
+          revenue: revenue,
+          cast: cast,
         );
       }
     } catch (e) {
