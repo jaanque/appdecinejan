@@ -489,7 +489,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                 if (_collections.isNotEmpty) ...[
                   SliverToBoxAdapter(
                     child: Container(
-                      height: 100,
+                      height: 130,
                       margin: const EdgeInsets.only(bottom: 20),
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
