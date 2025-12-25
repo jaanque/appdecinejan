@@ -11,6 +11,7 @@ import '../services/collection_service.dart';
 import '../services/tmdb_service.dart';
 import 'movie_detail_screen.dart';
 import 'collection_detail_screen.dart';
+import '../widgets/movie_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -186,36 +187,67 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: Colors.white,
-          title: const Text("New Collection"),
-          content: TextField(
-            controller: nameController,
-            autofocus: true,
-            decoration: const InputDecoration(
-              hintText: 'Name your collection',
-              border: OutlineInputBorder(),
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: const Center(
+            child: Text(
+              "New Collection",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
-            ),
-            TextButton(
-              onPressed: () async {
-                final name = nameController.text.trim();
-                if (name.isNotEmpty) {
-                  try {
-                    await _collectionService.createCollection(name);
-                    await _loadCollections();
-                    if (context.mounted) Navigator.pop(context);
-                  } catch (e) {
-                    // Handle error
-                  }
-                }
-              },
-              child: const Text("Create", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-            ),
-          ],
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: TextField(
+                  controller: nameController,
+                  autofocus: true,
+                  style: const TextStyle(fontSize: 16),
+                  decoration: const InputDecoration(
+                    hintText: 'Collection name',
+                    border: InputBorder.none,
+                    icon: Icon(Icons.folder_open_rounded, color: Colors.grey),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final name = nameController.text.trim();
+                    if (name.isNotEmpty) {
+                      try {
+                        await _collectionService.createCollection(name);
+                        await _loadCollections();
+                        if (context.mounted) Navigator.pop(context);
+                      } catch (e) {
+                        // Handle error
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    "Create Collection",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -598,102 +630,9 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
                           final movie = _searchHistory[index];
-                          return Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            clipBehavior: Clip.antiAlias,
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => MovieDetailScreen(movie: movie),
-                                  ),
-                                );
-                              },
-                              onLongPress: () {
-                                _showOptionsDialog(movie);
-                              },
-                              child: Stack(
-                                fit: StackFit.expand,
-                                children: [
-                                  Hero(
-                                    tag: 'movie_poster_${movie.title}',
-                                    child: Image.network(
-                                      movie.posterUrl,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (ctx, err, stack) => Container(
-                                        color: Colors.grey[200],
-                                        child: const Center(
-                                          child: Icon(Icons.broken_image, color: Colors.grey),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  // Gradient Overlay
-                                  Positioned(
-                                    bottom: 0,
-                                    left: 0,
-                                    right: 0,
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          begin: Alignment.bottomCenter,
-                                          end: Alignment.topCenter,
-                                          colors: [
-                                            Colors.black.withOpacity(0.8),
-                                            Colors.transparent,
-                                          ],
-                                        ),
-                                      ),
-                                      child: Text(
-                                        movie.title,
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ),
-                                  ),
-                                  // More Options Button
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: Material(
-                                      color: Colors.transparent,
-                                      child: InkWell(
-                                        onTap: () => _showOptionsDialog(movie),
-                                        borderRadius: BorderRadius.circular(20),
-                                        child: Container(
-                                          padding: const EdgeInsets.all(6),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withOpacity(0.4),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: const Icon(
-                                            Icons.more_horiz_rounded,
-                                            size: 20,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          return MovieCard(
+                            movie: movie,
+                            onDelete: () => _deleteMovie(movie),
                           );
                         },
                         childCount: _searchHistory.length,
