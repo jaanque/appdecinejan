@@ -438,30 +438,34 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
             CustomScrollView(
               slivers: [
                 // 1. Header
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 60, 16, 0),
-                    child: Row(
-                      children: [
-                        Icon(Icons.movie_filter_rounded, size: 32, color: Colors.black),
-                        const SizedBox(width: 12),
-                        const Text(
-                          "loremipsum",
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.black,
-                            letterSpacing: -0.5,
-                          ),
+                SliverAppBar(
+                  floating: true,
+                  pinned: false,
+                  backgroundColor: Colors.white,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 0,
+                  automaticallyImplyLeading: false,
+                  titleSpacing: 16,
+                  title: Row(
+                    children: [
+                      Icon(Icons.movie_filter_rounded, size: 32, color: Colors.black),
+                      const SizedBox(width: 12),
+                      const Text(
+                        "loremipsum",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.black,
+                          letterSpacing: -0.5,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
                 // 2. Action Menu
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                     child: Row(
                       children: [
                         _buildMenuButton(
@@ -633,6 +637,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                                       ),
                                     ),
                                   ),
+                                  // Gradient Overlay
                                   Positioned(
                                     bottom: 0,
                                     left: 0,
@@ -659,6 +664,30 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                         textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                                  // More Options Button
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: InkWell(
+                                        onTap: () => _showOptionsDialog(movie),
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(
+                                            color: Colors.black.withOpacity(0.4),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.more_horiz_rounded,
+                                            size: 20,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
