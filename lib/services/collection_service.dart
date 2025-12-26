@@ -63,4 +63,21 @@ class CollectionService {
       rethrow;
     }
   }
+
+  Future<void> addMovieToCollection(int collectionId, int movieId) async {
+    try {
+      await _client.from('collection_movies').insert({
+        'collection_id': collectionId,
+        'movie_id': movieId,
+      });
+    } on PostgrestException catch (e) {
+      // Ignore unique violation (already exists)
+      if (e.code == '23505') return;
+      debugPrint('Error adding movie to collection: ${e.message}');
+      rethrow;
+    } catch (e) {
+      debugPrint('Error adding movie to collection: $e');
+      rethrow;
+    }
+  }
 }
