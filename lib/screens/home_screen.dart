@@ -12,6 +12,7 @@ import '../services/tmdb_service.dart';
 import 'movie_detail_screen.dart';
 import 'collection_detail_screen.dart';
 import '../widgets/movie_card.dart';
+import '../widgets/collection_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -30,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isLoading = false;
   List<Movie> _searchHistory = [];
   List<Collection> _collections = [];
+  List<dynamic> _gridItems = []; // Unified list
 
   // Selection Mode State
   bool _isSelectionMode = false;
@@ -54,6 +56,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadData() async {
     await _loadSearchHistory();
     await _loadCollections();
+    _updateGridItems();
+  }
+
+  void _updateGridItems() {
+    setState(() {
+      // Collections first, then Movies
+      _gridItems = [..._collections, ..._searchHistory];
+    });
   }
 
   Future<void> _loadCollections() async {
@@ -79,7 +89,6 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       } catch (e) {
         debugPrint('Error loading movies from Supabase: $e');
-        // Fallback or show error? For now, silent fail or maybe fallback to local
       }
     } else {
       // 2. Fetch from SharedPreferences if guest
@@ -195,6 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
       }
 
       await _loadSearchHistory();
+      _updateGridItems();
       setState(() {
         _isSelectionMode = false;
         _selectedMovieIds.clear();
@@ -289,7 +299,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
-    );
+    ).then((_) => _updateGridItems());
   }
 
   Future<void> _processUrl() async {
@@ -591,125 +601,13 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                     ),
                   ),
                 ),
-                // 3. Content (Collections + Grid or Empty State)
-                if (_collections.isNotEmpty) ...[
-                  SliverToBoxAdapter(
-                    child: Container(
-                      height: 130,
-                      margin: const EdgeInsets.only(bottom: 20),
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _collections.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 12),
-                        itemBuilder: (context, index) {
-                          final collection = _collections[index];
-                          return DragTarget<Movie>(
-                            onWillAccept: (movie) => true,
-                            onAccept: (movie) async {
-                              if (collection.id != null && movie.id != null) {
-                                try {
-                                  await _collectionService.addMovieToCollection(collection.id!, movie.id!);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text("Added to ${collection.name}")),
-                                  );
-                                  _loadCollections(); // Update counts if implemented
-                                } catch (e) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text("Failed to add movie")),
-                                  );
-                                }
-                              }
-                            },
-                            builder: (context, candidateData, rejectedData) {
-                              final bool isHovered = candidateData.isNotEmpty;
-
-                              return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => CollectionDetailScreen(collection: collection),
-                                    ),
-                                  );
-                                },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 200),
-                                  width: 150,
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: isHovered ? Colors.blue.shade50 : Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color: isHovered ? Colors.blue : Colors.grey.shade100,
-                                      width: isHovered ? 2 : 1,
-                                    ),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.03),
-                                        blurRadius: 10,
-                                        offset: const Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: isHovered ? Colors.blue.withOpacity(0.1) : Colors.grey.shade50,
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: Icon(
-                                          isHovered ? Icons.add_to_photos_rounded : Icons.folder_special_rounded,
-                                          color: isHovered ? Colors.blue : Colors.black87,
-                                          size: 24,
-                                        ),
-                                      ),
-                                      Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            collection.name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 15,
-                                              color: isHovered ? Colors.blue.shade900 : Colors.black87,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            "0 items", // Placeholder count
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: isHovered ? Colors.blue.shade300 : Colors.grey.shade500,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-
-                if (_searchHistory.isNotEmpty) ...[
+                // 3. Content (Unified Grid)
+                if (_gridItems.isNotEmpty) ...[
                   const SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       child: Text(
-                        "History", // Renamed from "Collection" to avoid confusion
+                        "Library",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -723,27 +621,35 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                     sliver: SliverGrid(
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        childAspectRatio: 0.7, // Movie poster ratio
+                        childAspectRatio: 0.7, // Matches Movie Card ratio
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
-                          final movie = _searchHistory[index];
-                          return MovieCard(
-                            movie: movie,
-                            isSelectionMode: _isSelectionMode,
-                            isSelected: movie.id != null && _selectedMovieIds.contains(movie.id),
-                            onSelectionToggle: () {
-                              if (movie.id != null) {
-                                _toggleMovieSelection(movie.id!);
-                              }
-                            },
-                            // Pass default delete/tap behavior which MovieCard uses if NOT in selection mode
-                            onDelete: () => _deleteMovie(movie),
-                          );
+                          final item = _gridItems[index];
+
+                          if (item is Collection) {
+                            return CollectionCard(
+                              collection: item,
+                              onUpdate: _loadCollections,
+                            );
+                          } else if (item is Movie) {
+                            return MovieCard(
+                              movie: item,
+                              isSelectionMode: _isSelectionMode,
+                              isSelected: item.id != null && _selectedMovieIds.contains(item.id),
+                              onSelectionToggle: () {
+                                if (item.id != null) {
+                                  _toggleMovieSelection(item.id!);
+                                }
+                              },
+                              onDelete: () => _deleteMovie(item),
+                            );
+                          }
+                          return const SizedBox.shrink();
                         },
-                        childCount: _searchHistory.length,
+                        childCount: _gridItems.length,
                       ),
                     ),
                   ),
