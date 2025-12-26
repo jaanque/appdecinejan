@@ -36,6 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Selection Mode State
   bool _isSelectionMode = false;
   final Set<int> _selectedMovieIds = {};
+  final Set<int> _selectedCollectionIds = {};
 
   // API Key provided by the user (Groq)
   final String _apiKey = dotenv.env['GROQ_API_KEY'] ?? '';
@@ -144,15 +145,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _deleteSelectedMovies() async {
-    if (_selectedMovieIds.isEmpty) return;
+  Future<void> _deleteSelectedItems() async {
+    final totalCount = _selectedMovieIds.length + _selectedCollectionIds.length;
+    if (totalCount == 0) return;
 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
-        title: const Text("Delete Movies"),
-        content: Text("Are you sure you want to delete ${_selectedMovieIds.length} items?"),
+        title: const Text("Delete Items"),
+        content: Text("Are you sure you want to delete $totalCount items?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -172,14 +174,18 @@ class _HomeScreenState extends State<HomeScreen> {
         for (final id in _selectedMovieIds) {
           await _movieService.deleteMovie(id);
         }
+        for (final id in _selectedCollectionIds) {
+          await _collectionService.deleteCollection(id);
+        }
       } else {
-        // Handle local bulk delete if needed, for now just refresh
+        // Handle local bulk delete if needed
       }
 
       await _refreshData();
       setState(() {
         _isSelectionMode = false;
         _selectedMovieIds.clear();
+        _selectedCollectionIds.clear();
       });
     }
   }
@@ -188,6 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _isSelectionMode = !_isSelectionMode;
       _selectedMovieIds.clear();
+      _selectedCollectionIds.clear();
     });
   }
 
@@ -197,6 +204,16 @@ class _HomeScreenState extends State<HomeScreen> {
         _selectedMovieIds.remove(id);
       } else {
         _selectedMovieIds.add(id);
+      }
+    });
+  }
+
+  void _toggleCollectionSelection(int id) {
+    setState(() {
+      if (_selectedCollectionIds.contains(id)) {
+        _selectedCollectionIds.remove(id);
+      } else {
+        _selectedCollectionIds.add(id);
       }
     });
   }
@@ -507,7 +524,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                       : null,
                   title: _isSelectionMode
                       ? Text(
-                          "${_selectedMovieIds.length} Selected",
+                          "${_selectedMovieIds.length + _selectedCollectionIds.length} Selected",
                           style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                         )
                       : Row(
@@ -529,7 +546,9 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                     if (_isSelectionMode)
                       IconButton(
                         icon: const Icon(Icons.delete_outline, color: Colors.red),
-                        onPressed: _selectedMovieIds.isNotEmpty ? _deleteSelectedMovies : null,
+                        onPressed: (_selectedMovieIds.isNotEmpty || _selectedCollectionIds.isNotEmpty)
+                            ? _deleteSelectedItems
+                            : null,
                       )
                     else
                       PopupMenuButton<String>(
@@ -604,6 +623,13 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                           if (item is Collection) {
                             return CollectionCard(
                               collection: item,
+                              isSelectionMode: _isSelectionMode,
+                              isSelected: item.id != null && _selectedCollectionIds.contains(item.id),
+                              onSelectionToggle: () {
+                                if (item.id != null) {
+                                  _toggleCollectionSelection(item.id!);
+                                }
+                              },
                               onUpdate: _refreshData,
                             );
                           } else if (item is Movie) {
