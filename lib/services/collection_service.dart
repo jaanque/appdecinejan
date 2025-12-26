@@ -30,7 +30,7 @@ class CollectionService {
     try {
       final response = await _client
           .from('collections')
-          .select()
+          .select('*, collection_movies(user_movies(poster_url))')
           .order('created_at', ascending: false);
 
       final List<dynamic> data = response as List<dynamic>;
