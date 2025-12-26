@@ -612,7 +612,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                     sliver: SliverGrid(
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        childAspectRatio: 0.7, // Matches Movie Card ratio
+                        childAspectRatio: 0.55, // Adjusted for text below image
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                       ),
