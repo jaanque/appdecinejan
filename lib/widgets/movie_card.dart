@@ -23,101 +23,90 @@ class MovieCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget cardContent = Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: isSelected
-            ? Border.all(color: Colors.blue, width: 3)
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // If we are in selection mode, disable the Hero to avoid conflicts during UI updates
-          isSelectionMode
-              ? Image.network(
-                  movie.posterUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (ctx, err, stack) => Container(
-                    color: Colors.grey[200],
-                    child: const Center(
-                      child: Icon(Icons.broken_image, color: Colors.grey),
-                    ),
-                  ),
-                )
-              : Hero(
-                  tag: 'movie_poster_${movie.title}',
-                  child: Image.network(
-                    movie.posterUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (ctx, err, stack) => Container(
-                      color: Colors.grey[200],
-                      child: const Center(
-                        child: Icon(Icons.broken_image, color: Colors.grey),
-                      ),
-                    ),
-                  ),
+    Widget cardContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: isSelected
+                  ? Border.all(color: Colors.blue, width: 3)
+                  : null,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-
-          // Selection Overlay
-          if (isSelectionMode)
-            Container(
-              color: isSelected ? Colors.black.withOpacity(0.3) : Colors.transparent,
-              child: isSelected
-                  ? const Center(
-                      child: Icon(Icons.check_circle, color: Colors.white, size: 40),
-                    )
-                  : const Align(
-                      alignment: Alignment.topRight,
-                      child: Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: Icon(Icons.circle_outlined, color: Colors.white, size: 28),
-                      ),
-                    ),
+              ],
             ),
+            clipBehavior: Clip.antiAlias,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // If we are in selection mode, disable the Hero to avoid conflicts during UI updates
+                isSelectionMode
+                    ? Image.network(
+                        movie.posterUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (ctx, err, stack) => Container(
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: Icon(Icons.broken_image, color: Colors.grey),
+                          ),
+                        ),
+                      )
+                    : Hero(
+                        tag: 'movie_poster_${movie.title}',
+                        child: Image.network(
+                          movie.posterUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (ctx, err, stack) => Container(
+                            color: Colors.grey[200],
+                            child: const Center(
+                              child: Icon(Icons.broken_image, color: Colors.grey),
+                            ),
+                          ),
+                        ),
+                      ),
 
-          // Gradient Overlay (Only show if NOT selected to keep visual clean, or keep it?)
-          // Let's keep it but maybe hide if selected for clarity. For now keep it.
-          if (!isSelected)
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.8),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-              child: Text(
-                movie.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
+                // Selection Overlay
+                if (isSelectionMode)
+                  Container(
+                    color: isSelected ? Colors.black.withOpacity(0.3) : Colors.transparent,
+                    child: isSelected
+                        ? const Center(
+                            child: Icon(Icons.check_circle, color: Colors.white, size: 40),
+                          )
+                        : const Align(
+                            alignment: Alignment.topRight,
+                            child: Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Icon(Icons.circle_outlined, color: Colors.white, size: 28),
+                            ),
+                          ),
+                  ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: Text(
+            movie.title,
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
     );
 
     // If in selection mode, disable Draggable and just use Tap
