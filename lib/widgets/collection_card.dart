@@ -25,7 +25,7 @@ class CollectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget cardContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
           child: AnimatedContainer(
@@ -47,13 +47,50 @@ class CollectionCard extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                Center(
-                  child: Icon(
-                    Icons.folder_special_rounded,
-                    size: 48,
-                    color: Colors.grey.shade400,
+                // Fan Effect or Fallback Icon
+                if (collection.previewPosters.isNotEmpty)
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Render up to 3 posters
+                      for (int i = 0; i < collection.previewPosters.length && i < 3; i++)
+                        Transform.translate(
+                          offset: Offset(
+                            (i - (collection.previewPosters.length > 3 ? 1 : (collection.previewPosters.length - 1) / 2)) * 15.0,
+                            (i - (collection.previewPosters.length > 3 ? 1 : (collection.previewPosters.length - 1) / 2)) * -5.0,
+                          ),
+                          child: Transform.rotate(
+                            angle: (i - (collection.previewPosters.length > 3 ? 1 : (collection.previewPosters.length - 1) / 2)) * 0.2,
+                            child: Container(
+                              width: 80,
+                              height: 120,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                                image: DecorationImage(
+                                  image: NetworkImage(collection.previewPosters[i]),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  )
+                else
+                  Center(
+                    child: Icon(
+                      Icons.folder_special_rounded,
+                      size: 48,
+                      color: Colors.grey.shade400,
+                    ),
                   ),
-                ),
                 if (isSelectionMode)
                   Container(
                     decoration: BoxDecoration(

@@ -24,7 +24,7 @@ class MovieCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget cardContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
           child: Container(
