@@ -5,45 +5,30 @@ import '../screens/movie_detail_screen.dart';
 
 class MovieCard extends StatelessWidget {
   final Movie movie;
-  final VoidCallback onDelete;
+  final VoidCallback? onDelete; // Kept for compatibility but might be unused in selection mode
   final VoidCallback? onTap;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final VoidCallback? onSelectionToggle;
 
   const MovieCard({
     super.key,
     required this.movie,
-    required this.onDelete,
+    this.onDelete,
     this.onTap,
+    this.isSelectionMode = false,
+    this.isSelected = false,
+    this.onSelectionToggle,
   });
-
-  void _showFocusedMenu(BuildContext context) {
-    final RenderBox renderBox = context.findRenderObject() as RenderBox;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    final size = renderBox.size;
-
-    Navigator.of(context).push(PageRouteBuilder(
-      opaque: false,
-      barrierDismissible: true,
-      barrierColor: Colors.black.withOpacity(0.1), // Slight darken for blur visibility
-      transitionDuration: const Duration(milliseconds: 200),
-      pageBuilder: (context, animation, secondaryAnimation) {
-        return FadeTransition(
-          opacity: animation,
-          child: _FocusedMenuOverlay(
-            movie: movie,
-            position: offset,
-            size: size,
-            onDelete: onDelete,
-          ),
-        );
-      },
-    ));
-  }
 
   @override
   Widget build(BuildContext context) {
     Widget cardContent = Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
+        border: isSelected
+            ? Border.all(color: Colors.blue, width: 3)
+            : null,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
@@ -56,20 +41,52 @@ class MovieCard extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Hero(
-            tag: 'movie_poster_${movie.title}',
-            child: Image.network(
-              movie.posterUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (ctx, err, stack) => Container(
-                color: Colors.grey[200],
-                child: const Center(
-                  child: Icon(Icons.broken_image, color: Colors.grey),
+          // If we are in selection mode, disable the Hero to avoid conflicts during UI updates
+          isSelectionMode
+              ? Image.network(
+                  movie.posterUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (ctx, err, stack) => Container(
+                    color: Colors.grey[200],
+                    child: const Center(
+                      child: Icon(Icons.broken_image, color: Colors.grey),
+                    ),
+                  ),
+                )
+              : Hero(
+                  tag: 'movie_poster_${movie.title}',
+                  child: Image.network(
+                    movie.posterUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (ctx, err, stack) => Container(
+                      color: Colors.grey[200],
+                      child: const Center(
+                        child: Icon(Icons.broken_image, color: Colors.grey),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+
+          // Selection Overlay
+          if (isSelectionMode)
+            Container(
+              color: isSelected ? Colors.black.withOpacity(0.3) : Colors.transparent,
+              child: isSelected
+                  ? const Center(
+                      child: Icon(Icons.check_circle, color: Colors.white, size: 40),
+                    )
+                  : const Align(
+                      alignment: Alignment.topRight,
+                      child: Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Icon(Icons.circle_outlined, color: Colors.white, size: 28),
+                      ),
+                    ),
             ),
-          ),
-          // Gradient Overlay
+
+          // Gradient Overlay (Only show if NOT selected to keep visual clean, or keep it?)
+          // Let's keep it but maybe hide if selected for clarity. For now keep it.
+          if (!isSelected)
           Positioned(
             bottom: 0,
             left: 0,
@@ -103,13 +120,21 @@ class MovieCard extends StatelessWidget {
       ),
     );
 
+    // If in selection mode, disable Draggable and just use Tap
+    if (isSelectionMode) {
+      return GestureDetector(
+        onTap: onSelectionToggle,
+        child: cardContent,
+      );
+    }
+
     return LongPressDraggable<Movie>(
       data: movie,
       feedback: Transform.scale(
         scale: 1.05,
         child: SizedBox(
-          width: 150, // Approx width of card
-          height: 220, // Approx height of card
+          width: 150,
+          height: 220,
           child: Material(
             color: Colors.transparent,
             elevation: 8,
@@ -128,7 +153,6 @@ class MovieCard extends StatelessWidget {
         opacity: 0.5,
         child: cardContent,
       ),
-      // We keep the GestureDetector for Tap, but LongPress is now handled by Draggable
       child: GestureDetector(
         onTap: () {
           if (onTap != null) {
@@ -141,166 +165,8 @@ class MovieCard extends StatelessWidget {
             );
           }
         },
-        // We removed onLongPress here because LongPressDraggable handles it.
-        // If the user wants the "Blur Menu" AND "Drag", it's a conflict.
-        // Per instructions: "mantener una peli y salte el efecto de blur deje arrastrar"
-        // (hold a movie, blur jumps, let drag).
-        // Standard Draggable doesn't do the "Blur screen" effect easily.
-        // For now, Drag is the priority interaction requested.
         child: cardContent,
       ),
-    );
-  }
-}
-
-class _FocusedMenuOverlay extends StatelessWidget {
-  final Movie movie;
-  final Offset position;
-  final Size size;
-  final VoidCallback onDelete;
-
-  const _FocusedMenuOverlay({
-    required this.movie,
-    required this.position,
-    required this.size,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final bool isLeftColumn = position.dx < screenWidth / 2;
-
-    // Menu Positioning
-    // If Left Column -> Show Menu to the Right (position.dx + size.width + spacing)
-    // If Right Column -> Show Menu to the Left (position.dx - menuWidth - spacing)
-
-    // Safe area spacing
-    const double spacing = 12.0;
-    const double menuWidth = 140.0; // Estimate
-
-    double menuLeft;
-    if (isLeftColumn) {
-      menuLeft = position.dx + size.width + spacing;
-    } else {
-      menuLeft = position.dx - menuWidth - spacing;
-    }
-
-    return Stack(
-      children: [
-        // Blur Background
-        BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(color: Colors.transparent),
-          ),
-        ),
-
-        // Highlighted Movie Card (Static Copy)
-        Positioned(
-          left: position.dx,
-          top: position.dy,
-          width: size.width,
-          height: size.height,
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Image.network(
-                  movie.posterUrl,
-                  fit: BoxFit.cover,
-                ),
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [
-                          Colors.black.withOpacity(0.8),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                    child: Text(
-                      movie.title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Options Menu
-        Positioned(
-          left: menuLeft,
-          top: position.dy + (size.height / 2) - 40, // Center vertically relative to card (approx)
-          width: menuWidth,
-          child: Material(
-            color: Colors.transparent,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    dense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    leading: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
-                    title: const Text(
-                      "Delete",
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
-                    ),
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      onDelete();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
