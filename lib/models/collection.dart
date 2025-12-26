@@ -31,7 +31,7 @@ class Collection {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
-      previewPosters: posters,
+      previewPosters: List<String>.from(posters),
     );
   }
 
