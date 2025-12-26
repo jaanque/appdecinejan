@@ -46,68 +46,49 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _refreshData();
     // Listen to Auth State Changes to reload data if user logs in
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-       _loadData();
+       _refreshData();
     });
   }
 
-  Future<void> _loadData() async {
-    await _loadSearchHistory();
-    await _loadCollections();
-    _updateGridItems();
-  }
+  Future<void> _refreshData() async {
+    final movies = await _fetchSearchHistory();
+    final collections = await _fetchCollections();
 
-  void _updateGridItems() {
-    setState(() {
-      // Collections first, then Movies
-      _gridItems = [..._collections, ..._searchHistory];
-    });
-  }
-
-  Future<void> _loadCollections() async {
-    final cols = await _collectionService.getCollections();
     if (mounted) {
       setState(() {
-        _collections = cols;
+        _searchHistory = movies;
+        _collections = collections;
+        // Unified grid: Collections first, then Movies
+        _gridItems = [..._collections, ..._searchHistory];
       });
     }
   }
 
-  Future<void> _loadSearchHistory() async {
+  Future<List<Collection>> _fetchCollections() async {
+    return await _collectionService.getCollections();
+  }
+
+  Future<List<Movie>> _fetchSearchHistory() async {
     final user = Supabase.instance.client.auth.currentUser;
 
     if (user != null) {
-      // 1. Fetch from Supabase if logged in
       try {
-        final movies = await _movieService.getMovies();
-        if (mounted) {
-          setState(() {
-            _searchHistory = movies;
-          });
-        }
+        return await _movieService.getMovies();
       } catch (e) {
         debugPrint('Error loading movies from Supabase: $e');
+        return [];
       }
     } else {
-      // 2. Fetch from SharedPreferences if guest
       final prefs = await SharedPreferences.getInstance();
       final String? historyJson = prefs.getString('search_history');
       if (historyJson != null) {
         final List<dynamic> decodedList = jsonDecode(historyJson);
-        if (mounted) {
-          setState(() {
-            _searchHistory = decodedList.map((item) => Movie.fromJson(item)).toList();
-          });
-        }
-      } else {
-        if (mounted) {
-           setState(() {
-            _searchHistory = [];
-          });
-        }
+        return decodedList.map((item) => Movie.fromJson(item)).toList();
       }
+      return [];
     }
   }
 
@@ -115,12 +96,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = Supabase.instance.client.auth.currentUser;
 
     if (user != null) {
-      // 1. Save to Supabase
       try {
         await _movieService.saveMovie(newMovie.title, newMovie.posterUrl);
-        // Reload to get the new ID and correct order, or just manually insert to list
-        // Re-fetching is safer for consistency
-        await _loadSearchHistory();
+        await _refreshData();
       } catch (e) {
         debugPrint('Error saving to Supabase: $e');
          if (mounted) {
@@ -128,10 +106,11 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     } else {
-      // 2. Save to SharedPreferences
+      // Optimistic update for local storage or guest
       setState(() {
         _searchHistory.removeWhere((m) => m.title == newMovie.title);
         _searchHistory.insert(0, newMovie);
+        _gridItems = [..._collections, ..._searchHistory];
       });
 
       final prefs = await SharedPreferences.getInstance();
@@ -144,10 +123,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final user = Supabase.instance.client.auth.currentUser;
 
     if (user != null && movie.id != null) {
-      // Delete from Supabase
       try {
         await _movieService.deleteMovie(movie.id!);
-        await _loadSearchHistory(); // Refresh list
+        await _refreshData();
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -156,9 +134,9 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     } else {
-      // Delete from Local Storage
       setState(() {
         _searchHistory.removeWhere((m) => m.title == movie.title);
+        _gridItems = [..._collections, ..._searchHistory];
       });
       final prefs = await SharedPreferences.getInstance();
       final String historyJson = jsonEncode(_searchHistory.map((m) => m.toJson()).toList());
@@ -195,16 +173,10 @@ class _HomeScreenState extends State<HomeScreen> {
           await _movieService.deleteMovie(id);
         }
       } else {
-        // Local storage deletion logic
-        setState(() {
-           // This assumes local movies have temporary negative IDs or handle by title if needed
-           // For simplicity in this demo, we mainly handle cloud deletion via ID
-           // If local, we might need a better ID strategy, but here we assume Supabase mainly.
-        });
+        // Handle local bulk delete if needed, for now just refresh
       }
 
-      await _loadSearchHistory();
-      _updateGridItems();
+      await _refreshData();
       setState(() {
         _isSelectionMode = false;
         _selectedMovieIds.clear();
@@ -273,7 +245,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (name.isNotEmpty) {
                       try {
                         await _collectionService.createCollection(name);
-                        await _loadCollections();
+                        await _refreshData();
                         if (context.mounted) Navigator.pop(context);
                       } catch (e) {
                         // Handle error
@@ -299,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
-    ).then((_) => _updateGridItems());
+    ).then((_) => _refreshData());
   }
 
   Future<void> _processUrl() async {
@@ -632,7 +604,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                           if (item is Collection) {
                             return CollectionCard(
                               collection: item,
-                              onUpdate: _loadCollections,
+                              onUpdate: _refreshData,
                             );
                           } else if (item is Movie) {
                             return MovieCard(
