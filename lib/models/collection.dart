@@ -13,11 +13,14 @@ class Collection {
 
   factory Collection.fromJson(Map<String, dynamic> json) {
     List<String> posters = [];
-    if (json['collection_movies'] != null) {
+    if (json['collection_movies'] != null && (json['collection_movies'] is List)) {
       final moviesData = json['collection_movies'] as List;
       for (var item in moviesData) {
-        if (item['user_movies'] != null && item['user_movies']['poster_url'] != null) {
-          posters.add(item['user_movies']['poster_url'] as String);
+        if (item is Map &&
+            item['user_movies'] != null &&
+            item['user_movies'] is Map &&
+            item['user_movies']['poster_url'] != null) {
+          posters.add(item['user_movies']['poster_url'].toString());
         }
       }
     }
