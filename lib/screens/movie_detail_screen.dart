@@ -45,30 +45,43 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       setState(() {
         // 1. Dark Color (Connector & Gradient End)
         // Prefer DarkVibrant, then DarkMuted, then Dominant (if dark), else Black
-        _darkColor = generator.darkVibrantColor?.color ??
-                     generator.darkMutedColor?.color ??
-                     (generator.dominantColor?.color.computeLuminance() ?? 1.0 < 0.2 ? generator.dominantColor!.color : Colors.black);
+        _darkColor =
+            generator.darkVibrantColor?.color ??
+            generator.darkMutedColor?.color ??
+            ((generator.dominantColor?.color.computeLuminance() ?? 1.0) < 0.2
+                ? generator.dominantColor!.color
+                : Colors.black);
 
         // 2. Background Color (Content Sheet)
         // We want a very soft tint. Take the LightMuted or Dominant and wash it out.
-        Color baseLight = generator.lightMutedColor?.color ??
-                          generator.lightVibrantColor?.color ??
-                          generator.dominantColor?.color ??
-                          Colors.white;
+        Color baseLight =
+            generator.lightMutedColor?.color ??
+            generator.lightVibrantColor?.color ??
+            generator.dominantColor?.color ??
+            Colors.white;
 
         // Ensure it's very light (high luminance)
         if (baseLight.computeLuminance() < 0.8) {
-             _backgroundColor = Color.alphaBlend(Colors.white.withOpacity(0.9), baseLight);
+          _backgroundColor = Color.alphaBlend(
+            Colors.white.withOpacity(0.9),
+            baseLight,
+          );
         } else {
-             _backgroundColor = baseLight.withOpacity(0.3); // Apply opacity to blend with white background of scaffold? No, scaffold is white.
-             _backgroundColor = Color.alphaBlend(baseLight.withOpacity(0.2), Colors.white);
+          _backgroundColor = baseLight.withOpacity(
+            0.3,
+          ); // Apply opacity to blend with white background of scaffold? No, scaffold is white.
+          _backgroundColor = Color.alphaBlend(
+            baseLight.withOpacity(0.2),
+            Colors.white,
+          );
         }
 
         // 3. Accent Color (Buttons)
         // Use Vibrant or Dominant
-        _accentColor = generator.vibrantColor?.color ??
-                       generator.dominantColor?.color ??
-                       Colors.black;
+        _accentColor =
+            generator.vibrantColor?.color ??
+            generator.dominantColor?.color ??
+            Colors.black;
       });
     }
   }
@@ -100,7 +113,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   @override
   Widget build(BuildContext context) {
     // Determine text color based on background luminance (usually black since we force light bg)
-    final Color textColor = _backgroundColor.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+    final Color textColor = _backgroundColor.computeLuminance() > 0.5
+        ? Colors.black
+        : Colors.white;
     final Color secondaryTextColor = textColor.withOpacity(0.6);
 
     return Scaffold(
@@ -119,7 +134,10 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                 color: Colors.white.withOpacity(0.9),
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8),
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 8,
+                  ),
                 ],
               ),
               child: const BackButton(color: Colors.black),
@@ -173,7 +191,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                           ),
                           const SizedBox(height: 8),
                           // Tagline
-                          if (_movie.tagline != null && _movie.tagline!.isNotEmpty)
+                          if (_movie.tagline != null &&
+                              _movie.tagline!.isNotEmpty)
                             Text(
                               _movie.tagline!,
                               style: TextStyle(
@@ -226,7 +245,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
               child: Container(
                 decoration: BoxDecoration(
                   color: _backgroundColor, // Dynamic light background
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
                 ),
                 padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
                 child: Column(
@@ -239,18 +260,29 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                           child: ElevatedButton.icon(
                             onPressed: () {
                               // Save logic
-                              _movieService.saveMovie(_movie.title, _movie.posterUrl);
+                              _movieService.saveMovie(
+                                _movie.title,
+                                _movie.posterUrl,
+                              );
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Saved to Library")),
+                                const SnackBar(
+                                  content: Text("Saved to Library"),
+                                ),
                               );
                             },
                             icon: const Icon(Icons.bookmark_add_rounded),
                             label: const Text("Add to Library"),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _accentColor, // Use dynamic accent
-                              foregroundColor: _accentColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                              backgroundColor:
+                                  _accentColor, // Use dynamic accent
+                              foregroundColor:
+                                  _accentColor.computeLuminance() > 0.5
+                                  ? Colors.black
+                                  : Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                               elevation: 0,
                             ),
                           ),
@@ -258,7 +290,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                         const SizedBox(width: 16),
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.05), // Subtle tint
+                            color: Colors.black.withOpacity(
+                              0.05,
+                            ), // Subtle tint
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: IconButton(
@@ -277,19 +311,32 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: _movie.genres!.map((g) => Chip(
-                          label: Text(g),
-                          backgroundColor: Colors.white.withOpacity(0.6),
-                          side: BorderSide(color: Colors.black.withOpacity(0.1)),
-                          labelStyle: TextStyle(color: textColor.withOpacity(0.8), fontSize: 12),
-                        )).toList(),
+                        children: _movie.genres!
+                            .map(
+                              (g) => Chip(
+                                label: Text(g),
+                                backgroundColor: Colors.white.withOpacity(0.6),
+                                side: BorderSide(
+                                  color: Colors.black.withOpacity(0.1),
+                                ),
+                                labelStyle: TextStyle(
+                                  color: textColor.withOpacity(0.8),
+                                  fontSize: 12,
+                                ),
+                              ),
+                            )
+                            .toList(),
                       ),
                     const SizedBox(height: 32),
 
                     // Overview
                     Text(
                       "Storyline",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -306,7 +353,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                     if (_movie.cast != null && _movie.cast!.isNotEmpty) ...[
                       Text(
                         "Cast",
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -314,7 +365,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _movie.cast!.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 16),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 16),
                           itemBuilder: (context, index) {
                             final actor = _movie.cast![index];
                             return Column(
@@ -324,9 +376,14 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                   backgroundImage: actor.profileUrl != null
                                       ? NetworkImage(actor.profileUrl!)
                                       : null,
-                                  backgroundColor: Colors.black.withOpacity(0.1),
+                                  backgroundColor: Colors.black.withOpacity(
+                                    0.1,
+                                  ),
                                   child: actor.profileUrl == null
-                                      ? Icon(Icons.person, color: secondaryTextColor)
+                                      ? Icon(
+                                          Icons.person,
+                                          color: secondaryTextColor,
+                                        )
                                       : null,
                                 ),
                                 const SizedBox(height: 8),
@@ -337,7 +394,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
-                                      color: textColor
+                                      color: textColor,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
