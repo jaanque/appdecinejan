@@ -119,9 +119,6 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                       final movie = _movies[index];
                       return MovieCard(
                         movie: movie,
-                        onTap: () {
-                          // Optionally navigate to movie details
-                        },
                       );
                     },
                   ),
