@@ -34,6 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Collection> _collections = [];
   List<dynamic> _gridItems = []; // Unified list
   String _currentFilter = 'All'; // 'All', 'Movies', 'Collections'
+  bool _isDragging = false; // Dragging state for UI hint
 
   // Selection Mode State
   bool _isSelectionMode = false;
@@ -617,6 +618,16 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                                 }
                               },
                               onDelete: () => _deleteMovie(item),
+                              onDragStarted: () {
+                                setState(() {
+                                  _isDragging = true;
+                                });
+                              },
+                              onDragEnd: () {
+                                setState(() {
+                                  _isDragging = false;
+                                });
+                              },
                             );
                           }
                           return const SizedBox.shrink();
@@ -664,7 +675,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
               ],
             ),
 
-          // Result Modal / Overlay if result is present?
+          // Result Modal / Overlay
           if (_result.isNotEmpty && !_isLoading && _posterUrl != null)
              Positioned.fill(
               child: GestureDetector(
@@ -708,6 +719,34 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                 ),
               ),
             ),
+
+          // Drag Instruction Hint
+          Positioned(
+            bottom: 24,
+            left: 0,
+            right: 0,
+            child: AnimatedOpacity(
+              opacity: _isDragging ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: const Text(
+                    "Drop onto a collection to add",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
