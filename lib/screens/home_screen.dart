@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -722,25 +723,44 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
 
           // Drag Instruction Hint
           Positioned(
-            bottom: 24,
+            bottom: 32,
             left: 0,
             right: 0,
-            child: AnimatedOpacity(
-              opacity: _isDragging ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 300),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.8),
+            child: AnimatedSlide(
+              offset: _isDragging ? Offset.zero : const Offset(0, 2),
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutCubic,
+              child: AnimatedOpacity(
+                opacity: _isDragging ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: Center(
+                  child: ClipRRect(
                     borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: const Text(
-                    "Drop onto a collection to add",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(color: Colors.white.withOpacity(0.1)),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add_to_photos_rounded, color: Colors.white, size: 18),
+                            SizedBox(width: 12),
+                            Text(
+                              "Drop into a collection",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
