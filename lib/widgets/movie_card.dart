@@ -10,6 +10,8 @@ class MovieCard extends StatelessWidget {
   final bool isSelectionMode;
   final bool isSelected;
   final VoidCallback? onSelectionToggle;
+  final VoidCallback? onDragStarted;
+  final VoidCallback? onDragEnd;
 
   const MovieCard({
     super.key,
@@ -19,6 +21,8 @@ class MovieCard extends StatelessWidget {
     this.isSelectionMode = false,
     this.isSelected = false,
     this.onSelectionToggle,
+    this.onDragStarted,
+    this.onDragEnd,
   });
 
   @override
@@ -119,6 +123,10 @@ class MovieCard extends StatelessWidget {
 
     return LongPressDraggable<Movie>(
       data: movie,
+      onDragStarted: onDragStarted,
+      onDragEnd: (details) {
+        if (onDragEnd != null) onDragEnd!();
+      },
       feedback: Transform.scale(
         scale: 1.05,
         child: SizedBox(
