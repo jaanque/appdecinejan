@@ -3,7 +3,6 @@ import '../models/collection.dart';
 import '../models/movie.dart';
 import '../services/collection_service.dart';
 import '../widgets/movie_card.dart';
-import '../widgets/app_loader.dart';
 
 class CollectionDetailScreen extends StatefulWidget {
   final Collection collection;
@@ -68,7 +67,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
         ],
       ),
       body: _isLoading
-          ? const AppLoader()
+          ? const Center(child: CircularProgressIndicator(color: Colors.black))
           : _movies.isEmpty
               ? Center(
                   child: Column(

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:convert';
 import '../models/movie.dart';
 import '../models/cast_member.dart';
+import '../models/watch_provider.dart';
 
 class TMDBService {
   final String _accessToken = dotenv.env['TMDB_ACCESS_TOKEN'] ?? '';
@@ -96,6 +97,39 @@ class TMDBService {
       }
     } catch (e) {
       debugPrint('Error fetching trending movies: $e');
+    } finally {
+      client.close();
+    }
+    return [];
+  }
+
+  Future<List<WatchProvider>> getWatchProviders(int movieId, {String countryCode = 'US'}) async {
+    final client = HttpClient();
+    try {
+      final uri = Uri.parse('https://api.themoviedb.org/3/movie/$movieId/watch/providers');
+
+      final request = await client.getUrl(uri);
+      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $_accessToken');
+      request.headers.set(HttpHeaders.acceptHeader, 'application/json');
+
+      final response = await request.close();
+
+      if (response.statusCode == 200) {
+        final responseBody = await response.transform(utf8.decoder).join();
+        final json = jsonDecode(responseBody);
+
+        final results = json['results'];
+        if (results == null) return [];
+
+        final regionProviders = results[countryCode];
+
+        if (regionProviders != null && regionProviders['flatrate'] != null) {
+          final providersJson = regionProviders['flatrate'] as List;
+          return providersJson.map((p) => WatchProvider.fromJson(p)).toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching watch providers: $e');
     } finally {
       client.close();
     }
