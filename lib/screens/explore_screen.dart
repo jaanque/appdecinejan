@@ -153,14 +153,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       delay: index * 50,
                       child: MovieCard(
                         movie: movie,
-                        onTap: () {
-                           Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => MovieDetailScreen(movie: movie),
-                            ),
-                          );
-                        },
+                        // Allow MovieCard to handle navigation with its custom animation
                       ),
                     );
                   },
