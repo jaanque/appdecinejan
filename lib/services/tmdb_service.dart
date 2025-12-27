@@ -43,6 +43,39 @@ class TMDBService {
     return null;
   }
 
+  // New method to get a list of results for the Explore screen
+  Future<List<Movie>> searchMovies(String query) async {
+    final client = HttpClient();
+    try {
+      // Searching 'movie' specifically for explore results
+      final uri = Uri.parse(
+          'https://api.themoviedb.org/3/search/movie?query=${Uri.encodeComponent(query)}&include_adult=false&language=en-US&page=1');
+
+      final request = await client.getUrl(uri);
+      request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $_accessToken');
+      request.headers.set(HttpHeaders.acceptHeader, 'application/json');
+
+      final response = await request.close();
+
+      if (response.statusCode == 200) {
+        final responseBody = await response.transform(utf8.decoder).join();
+        final json = jsonDecode(responseBody);
+        final results = json['results'] as List;
+
+        // Filter out results without posters if desired, or just map all
+        return results
+            .where((m) => m['poster_path'] != null)
+            .map((m) => _movieFromTMDBJson(m))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('Error searching TMDB list: $e');
+    } finally {
+      client.close();
+    }
+    return [];
+  }
+
   Future<List<Movie>> getTrendingMovies() async {
     final client = HttpClient();
     try {
