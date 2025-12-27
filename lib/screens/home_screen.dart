@@ -476,24 +476,6 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
             ),
           ),
         ),
-        const SizedBox(width: 12),
-        InkWell(
-          onTap: _showCollectionDialog,
-          borderRadius: BorderRadius.circular(30),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: const Icon(
-              Icons.create_new_folder_outlined,
-              color: Colors.black,
-              size: 24,
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -543,20 +525,6 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
               slivers: [
                 // 1. Header (Minimalist: Search Row IS the AppBar)
                 SliverAppBar(
-                  floating: true,
-                  pinned: true,
-                  backgroundColor: Colors.white,
-                  surfaceTintColor: Colors.transparent,
-                  elevation: 0,
-                  automaticallyImplyLeading: false,
-                  titleSpacing: 16,
-                  // If selection mode, show minimal selection header
-                  leading: _isSelectionMode
-                      ? IconButton(
-                          icon: const Icon(Icons.close, color: Colors.black),
-                          onPressed: _toggleSelectionMode,
-                        )
-                      : null,
                   floating: true,
                   pinned: false,
                   snap: true, // Snap back on scroll up
