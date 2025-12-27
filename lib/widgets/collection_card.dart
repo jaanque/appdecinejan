@@ -47,40 +47,14 @@ class CollectionCard extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                // Fan Effect or Fallback Icon
+                // Fan Effect
                 if (collection.previewPosters.isNotEmpty)
                   Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Render up to 3 posters
+                      // We render up to 3 posters in a fan shape
                       for (int i = 0; i < collection.previewPosters.length && i < 3; i++)
-                        Transform.translate(
-                          offset: Offset(
-                            (i - (collection.previewPosters.length > 3 ? 1 : (collection.previewPosters.length - 1) / 2)) * 15.0,
-                            (i - (collection.previewPosters.length > 3 ? 1 : (collection.previewPosters.length - 1) / 2)) * -5.0,
-                          ),
-                          child: Transform.rotate(
-                            angle: (i - (collection.previewPosters.length > 3 ? 1 : (collection.previewPosters.length - 1) / 2)) * 0.2,
-                            child: Container(
-                              width: 80,
-                              height: 120,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                                image: DecorationImage(
-                                  image: NetworkImage(collection.previewPosters[i]),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+                         _buildFanItem(i, collection.previewPosters.length, collection.previewPosters[i]),
                     ],
                   )
                 else
@@ -229,6 +203,51 @@ class CollectionCard extends StatelessWidget {
           child: cardContent,
         );
       },
+    );
+  }
+
+  Widget _buildFanItem(int index, int total, String url) {
+    // Improve fan calculations
+    // Base index adjustment to center the fan
+    // If we have 1 item: index 0.
+    // If we have 2 items: 0, 1.
+    // If we have 3 items: 0, 1, 2.
+    // We want the middle item to be on top and centered?
+    // Or a spread like a hand of cards?
+    // Let's do a spread.
+
+    // Limits
+    int count = total > 3 ? 3 : total;
+    // Center point index (e.g. 1.0 for 3 items, 0.5 for 2 items)
+    double center = (count - 1) / 2.0;
+
+    // Calculate offset from center
+    double offset = index - center; // -1, 0, 1 for 3 items
+
+    return Transform.translate(
+      offset: Offset(offset * 15.0, offset.abs() * 5.0), // Curve down slightly at edges or fan out
+      child: Transform.rotate(
+        angle: offset * 0.2, // Rotate based on offset
+        child: Container(
+          width: 80,
+          height: 120,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+            image: DecorationImage(
+              image: NetworkImage(url),
+              fit: BoxFit.cover,
+            ),
+            border: Border.all(color: Colors.white, width: 2), // White border to separate cards
+          ),
+        ),
+      ),
     );
   }
 }

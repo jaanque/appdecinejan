@@ -9,14 +9,26 @@ class MovieService {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) return [];
 
+      // Fetch movies and their collection associations using a left join.
+      // We select 'collection_movies(id)' to check if a movie is part of any collection.
       final response = await _supabase
           .from('user_movies')
-          .select()
+          .select('*, collection_movies(id)')
           .eq('user_id', userId)
           .order('created_at', ascending: false);
 
       final data = response as List<dynamic>;
-      return data.map((json) => Movie.fromSupabase(json)).toList();
+
+      // Client-side filtering: Exclude movies that have associated collection entries.
+      // Note: Supabase/PostgREST doesn't support a direct "WHERE id NOT IN (SELECT ...)"
+      // or "filter by empty relation" easily in the JS/Dart client without RPCs or complex raw queries.
+      // For the expected data volume of a personal movie list, this client-side filter is efficient enough.
+      final uncollectedMovies = data.where((json) {
+        final collections = json['collection_movies'] as List<dynamic>?;
+        return collections == null || collections.isEmpty;
+      }).toList();
+
+      return uncollectedMovies.map((json) => Movie.fromSupabase(json)).toList();
     } catch (e) {
       // Handle error or rethrow
       return [];

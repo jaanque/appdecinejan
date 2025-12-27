@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/collection.dart';
+import '../models/movie.dart';
 
 class CollectionService {
   final SupabaseClient _client = Supabase.instance.client;
@@ -40,6 +41,28 @@ class CollectionService {
       return [];
     } catch (e) {
       debugPrint('Error fetching collections: $e');
+      return [];
+    }
+  }
+
+  Future<List<Movie>> getMoviesInCollection(int collectionId) async {
+     try {
+      // Query collection_movies to get the movies for this collection
+      final response = await _client
+          .from('collection_movies')
+          .select('user_movies(*)')
+          .eq('collection_id', collectionId);
+
+      final List<dynamic> data = response as List<dynamic>;
+
+      return data.map((json) {
+        // The structure is { user_movies: { ...movie_data... } }
+        final movieData = json['user_movies'] as Map<String, dynamic>;
+        return Movie.fromSupabase(movieData);
+      }).toList();
+
+    } catch (e) {
+      debugPrint('Error fetching movies for collection $collectionId: $e');
       return [];
     }
   }
