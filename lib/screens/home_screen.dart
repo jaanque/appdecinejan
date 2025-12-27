@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -32,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Movie> _searchHistory = [];
   List<Collection> _collections = [];
   List<dynamic> _gridItems = []; // Unified list
+  String _currentFilter = 'All'; // 'All', 'Movies', 'Collections'
 
   // Selection Mode State
   bool _isSelectionMode = false;
@@ -52,6 +54,16 @@ class _HomeScreenState extends State<HomeScreen> {
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
        _refreshData();
     });
+    // Listen to controller to update UI (suffix icon)
+    _controller.addListener(() {
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   Future<void> _refreshData() async {
@@ -62,10 +74,26 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _searchHistory = movies;
         _collections = collections;
-        // Unified grid: Collections first, then Movies
-        _gridItems = [..._collections, ..._searchHistory];
+        _applyFilter();
       });
     }
+  }
+
+  void _applyFilter() {
+    if (_currentFilter == 'Movies') {
+      _gridItems = [..._searchHistory];
+    } else if (_currentFilter == 'Collections') {
+      _gridItems = [..._collections];
+    } else {
+      _gridItems = [..._collections, ..._searchHistory];
+    }
+  }
+
+  void _setFilter(String filter) {
+    setState(() {
+      _currentFilter = filter;
+      _applyFilter();
+    });
   }
 
   Future<List<Collection>> _fetchCollections() async {
@@ -111,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _searchHistory.removeWhere((m) => m.title == newMovie.title);
         _searchHistory.insert(0, newMovie);
-        _gridItems = [..._collections, ..._searchHistory];
+        _applyFilter();
       });
 
       final prefs = await SharedPreferences.getInstance();
@@ -137,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       setState(() {
         _searchHistory.removeWhere((m) => m.title == movie.title);
-        _gridItems = [..._collections, ..._searchHistory];
+        _applyFilter();
       });
       final prefs = await SharedPreferences.getInstance();
       final String historyJson = jsonEncode(_searchHistory.map((m) => m.toJson()).toList());
@@ -295,6 +323,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final url = _controller.text.trim();
     if (url.isEmpty) return;
 
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
+
     setState(() {
       _isLoading = true;
       _result = '';
@@ -382,6 +413,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
       setState(() {
         _result = movieName;
         _posterUrl = posterPath;
+        _controller.clear(); // Clear input on success
       });
 
     } catch (e) {
@@ -397,60 +429,17 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
     }
   }
 
-
-  void _showInputDialog() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            left: 16,
-            right: 16,
-            top: 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _controller,
-                      autofocus: true,
-                      style: const TextStyle(color: Colors.black87),
-                      decoration: InputDecoration(
-                        hintText: 'Paste TikTok link...',
-                        hintStyle: TextStyle(color: Colors.grey[400]),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 14),
-                      ),
-                      onSubmitted: (_) {
-                        Navigator.of(context).pop();
-                        _processUrl();
-                      },
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      _processUrl();
-                    },
-                    icon: const Icon(Icons.arrow_forward_rounded, color: Colors.black),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
-    );
+  void _handleSmartPasteOrSubmit() async {
+    if (_controller.text.isEmpty) {
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      if (data?.text != null) {
+        setState(() {
+          _controller.text = data!.text!;
+        });
+      }
+    } else {
+      _processUrl();
+    }
   }
 
   @override
@@ -532,68 +521,73 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                       ),
                   ],
                 ),
-                // 2. Action Menu (New "Intuitive" Layout)
+                // 2. Action Menu (Inline Search + New Filter Chips)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                    child: Row(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Expanded Search Bar Trigger
-                        Expanded(
-                          child: InkWell(
-                            onTap: _showInputDialog,
-                            borderRadius: BorderRadius.circular(30),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                              decoration: BoxDecoration(
-                                color: Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(color: Colors.grey.shade200),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(Icons.link_rounded, color: Colors.grey.shade600, size: 22),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    "Paste TikTok link...",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey.shade500,
-                                      fontWeight: FontWeight.w500,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(30),
+                                  border: Border.all(color: Colors.grey.shade200),
+                                ),
+                                child: TextField(
+                                  controller: _controller,
+                                  style: const TextStyle(fontSize: 16),
+                                  decoration: InputDecoration(
+                                    hintText: "Paste TikTok link...",
+                                    hintStyle: TextStyle(color: Colors.grey.shade500),
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                    prefixIcon: Icon(Icons.link_rounded, color: Colors.grey.shade600),
+                                    suffixIcon: IconButton(
+                                      icon: Icon(
+                                        _controller.text.isEmpty ? Icons.paste_rounded : Icons.arrow_forward_rounded,
+                                        color: Colors.black,
+                                      ),
+                                      onPressed: _handleSmartPasteOrSubmit,
                                     ),
                                   ),
-                                  const Spacer(),
-                                  Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.black,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
-                                  ),
-                                ],
+                                  onSubmitted: (_) => _processUrl(),
+                                ),
                               ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            InkWell(
+                              onTap: _showCollectionDialog,
+                              borderRadius: BorderRadius.circular(30),
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: const Icon(
+                                  Icons.create_new_folder_outlined,
+                                  color: Colors.black,
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        // New Collection Button (Icon only)
-                        InkWell(
-                          onTap: _showCollectionDialog,
-                          borderRadius: BorderRadius.circular(30),
-                          child: Container(
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.grey.shade300),
-                            ),
-                            child: const Icon(
-                              Icons.create_new_folder_outlined,
-                              color: Colors.black,
-                              size: 24,
-                            ),
-                          ),
+                        const SizedBox(height: 16),
+                        // Filter Chips
+                        Row(
+                          children: [
+                            _buildFilterChip('All'),
+                            const SizedBox(width: 8),
+                            _buildFilterChip('Movies'),
+                            const SizedBox(width: 8),
+                            _buildFilterChip('Collections'),
+                          ],
                         ),
                       ],
                     ),
@@ -601,19 +595,6 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                 ),
                 // 3. Content (Unified Grid)
                 if (_gridItems.isNotEmpty) ...[
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      child: Text(
-                        "Library",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                  ),
                   SliverPadding(
                     padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
                     sliver: SliverGrid(
@@ -742,6 +723,33 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip(String label) {
+    final bool isSelected = _currentFilter == label;
+    return InkWell(
+      onTap: () => _setFilter(label),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.black : Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? Colors.black : Colors.grey.shade200,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? Colors.white : Colors.grey.shade700,
+          ),
+        ),
       ),
     );
   }
