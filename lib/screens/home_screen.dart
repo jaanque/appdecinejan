@@ -557,6 +557,21 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                           onPressed: _toggleSelectionMode,
                         )
                       : null,
+                  floating: true,
+                  pinned: false,
+                  snap: true, // Snap back on scroll up
+                  backgroundColor: Colors.white,
+                  surfaceTintColor: Colors.transparent,
+                  elevation: 0,
+                  automaticallyImplyLeading: false,
+                  titleSpacing: 20,
+                  // If selection mode, show minimal selection header
+                  leading: _isSelectionMode
+                      ? IconButton(
+                          icon: const Icon(Icons.close, color: Colors.black),
+                          onPressed: _toggleSelectionMode,
+                        )
+                      : null,
                   title: _isSelectionMode
                       ? Text(
                           "${_selectedMovieIds.length + _selectedCollectionIds.length} Selected",
@@ -574,8 +589,14 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                             ? _deleteSelectedItems
                             : null,
                       )
-                    else if (!_isSelectionMode)
-                      // Keep the menu but make it minimal/hidden
+                    else ...[
+                      // New Collection Icon
+                      IconButton(
+                        icon: const Icon(Icons.add, color: Colors.black),
+                        tooltip: 'New Collection',
+                        onPressed: _showCollectionDialog,
+                      ),
+                      // Menu
                       PopupMenuButton<String>(
                         icon: const Icon(Icons.more_vert, color: Colors.black),
                         onSelected: (value) {
@@ -592,13 +613,16 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                           ];
                         },
                       ),
+                    ],
                   ],
-                  bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(60),
-                    child: Container(
-                      color: Colors.white.withOpacity(0.95), // Slight transparency for context
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                      alignment: Alignment.centerLeft,
+                ),
+
+                // 2. Filter Chips (Moved to body for scroll-away effect)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
                           _buildFilterChip('All'),
