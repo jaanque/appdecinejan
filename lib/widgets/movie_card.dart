@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/movie.dart';
 import '../screens/movie_detail_screen.dart';
 
-class MovieCard extends StatelessWidget {
+class MovieCard extends StatefulWidget {
   final Movie movie;
   final VoidCallback? onDelete; // Kept for compatibility but might be unused in selection mode
   final VoidCallback? onTap;
@@ -26,6 +26,13 @@ class MovieCard extends StatelessWidget {
   });
 
   @override
+  State<MovieCard> createState() => _MovieCardState();
+}
+
+class _MovieCardState extends State<MovieCard> {
+  int _dropCount = 0;
+
+  @override
   Widget build(BuildContext context) {
     Widget cardContent = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -34,7 +41,7 @@ class MovieCard extends StatelessWidget {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: isSelected
+              border: widget.isSelected
                   ? Border.all(color: Colors.blue, width: 3)
                   : null,
               boxShadow: [
@@ -50,9 +57,9 @@ class MovieCard extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 // If we are in selection mode, disable the Hero to avoid conflicts during UI updates
-                isSelectionMode
+                widget.isSelectionMode
                     ? Image.network(
-                        movie.posterUrl,
+                        widget.movie.posterUrl,
                         fit: BoxFit.cover,
                         errorBuilder: (ctx, err, stack) => Container(
                           color: Colors.grey[200],
@@ -62,9 +69,9 @@ class MovieCard extends StatelessWidget {
                         ),
                       )
                     : Hero(
-                        tag: 'movie_poster_${movie.title}',
+                        tag: 'movie_poster_${widget.movie.title}',
                         child: Image.network(
-                          movie.posterUrl,
+                          widget.movie.posterUrl,
                           fit: BoxFit.cover,
                           errorBuilder: (ctx, err, stack) => Container(
                             color: Colors.grey[200],
@@ -76,10 +83,10 @@ class MovieCard extends StatelessWidget {
                       ),
 
                 // Selection Overlay
-                if (isSelectionMode)
+                if (widget.isSelectionMode)
                   Container(
-                    color: isSelected ? Colors.black.withOpacity(0.3) : Colors.transparent,
-                    child: isSelected
+                    color: widget.isSelected ? Colors.black.withOpacity(0.3) : Colors.transparent,
+                    child: widget.isSelected
                         ? const Center(
                             child: Icon(Icons.check_circle, color: Colors.white, size: 40),
                           )
@@ -99,7 +106,7 @@ class MovieCard extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4.0),
           child: Text(
-            movie.title,
+            widget.movie.title,
             style: const TextStyle(
               color: Colors.black,
               fontWeight: FontWeight.bold,
@@ -114,18 +121,23 @@ class MovieCard extends StatelessWidget {
     );
 
     // If in selection mode, disable Draggable and just use Tap
-    if (isSelectionMode) {
+    if (widget.isSelectionMode) {
       return GestureDetector(
-        onTap: onSelectionToggle,
+        onTap: widget.onSelectionToggle,
         child: cardContent,
       );
     }
 
     return LongPressDraggable<Movie>(
-      data: movie,
-      onDragStarted: onDragStarted,
+      data: widget.movie,
+      onDragStarted: widget.onDragStarted,
       onDragEnd: (details) {
-        if (onDragEnd != null) onDragEnd!();
+        if (widget.onDragEnd != null) widget.onDragEnd!();
+        if (mounted) {
+          setState(() {
+            _dropCount++;
+          });
+        }
       },
       feedback: TweenAnimationBuilder<double>(
         tween: Tween(begin: 1.0, end: 1.15),
@@ -144,7 +156,7 @@ class MovieCard extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
                   child: Image.network(
-                    movie.posterUrl,
+                    widget.movie.posterUrl,
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -165,17 +177,39 @@ class MovieCard extends StatelessWidget {
       ),
       child: GestureDetector(
         onTap: () {
-          if (onTap != null) {
-            onTap!();
+          if (widget.onTap != null) {
+            widget.onTap!();
           } else {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => MovieDetailScreen(movie: movie),
+                builder: (context) => MovieDetailScreen(movie: widget.movie),
               ),
             );
           }
         },
-        child: cardContent,
+        child: _dropCount > 0
+            ? TweenAnimationBuilder<double>(
+                key: ValueKey(_dropCount), // Restart animation on drop
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeOutQuart,
+                builder: (context, value, child) {
+                  // value goes 0.0 -> 1.0
+                  // Scale: 1.1 -> 1.0
+                  final scale = 1.1 - (0.1 * value);
+                  // Opacity: 0.5 -> 1.0
+                  final opacity = 0.5 + (0.5 * value);
+
+                  return Transform.scale(
+                    scale: scale,
+                    child: Opacity(
+                      opacity: opacity,
+                      child: cardContent,
+                    ),
+                  );
+                },
+              )
+            : cardContent,
       ),
     );
   }
