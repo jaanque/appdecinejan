@@ -568,7 +568,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                 // 2. Filter Chips (Aligned with search bar)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 24), // Increased spacing
                     child: Row(
                       children: [
                         _buildFilterChip('All'),
@@ -584,13 +584,13 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                 // 3. Content (Unified Grid)
                 if (_gridItems.isNotEmpty) ...[
                   SliverPadding(
-                    padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8), // Increased spacing
                     sliver: SliverGrid(
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
-                        childAspectRatio: 0.55, // Adjusted for text below image
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
+                        childAspectRatio: 0.55,
+                        crossAxisSpacing: 20, // Increased spacing
+                        mainAxisSpacing: 24, // Increased spacing
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -723,7 +723,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
 
           // Drag Instruction Hint
           Positioned(
-            bottom: 32,
+            bottom: 40,
             left: 0,
             right: 0,
             child: AnimatedSlide(
@@ -741,9 +741,15 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
+                          color: const Color(0xFF222222).withOpacity(0.9), // Softer black
                           borderRadius: BorderRadius.circular(30),
-                          border: Border.all(color: Colors.white.withOpacity(0.1)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
