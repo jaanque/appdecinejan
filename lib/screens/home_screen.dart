@@ -453,43 +453,6 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
     );
   }
 
-  Widget _buildMenuButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    bool isPrimary = false,
-  }) {
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isPrimary ? Colors.black : Colors.grey.shade50,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: isPrimary ? Colors.black : Colors.grey.shade200),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 20, color: isPrimary ? Colors.white : Colors.black87),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: isPrimary ? Colors.white : Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -569,24 +532,68 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                       ),
                   ],
                 ),
-                // 2. Action Menu
+                // 2. Action Menu (New "Intuitive" Layout)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                     child: Row(
                       children: [
-                        _buildMenuButton(
-                          icon: Icons.add,
-                          label: 'New film',
-                          onTap: _showInputDialog,
-                          isPrimary: true,
+                        // Expanded Search Bar Trigger
+                        Expanded(
+                          child: InkWell(
+                            onTap: _showInputDialog,
+                            borderRadius: BorderRadius.circular(30),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(30),
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.link_rounded, color: Colors.grey.shade600, size: 22),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    "Paste TikTok link...",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: Colors.grey.shade500,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 14),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                         const SizedBox(width: 12),
-                        _buildMenuButton(
-                          icon: Icons.collections_bookmark_outlined,
-                          label: 'New collection',
+                        // New Collection Button (Icon only)
+                        InkWell(
                           onTap: _showCollectionDialog,
-                          isPrimary: false,
+                          borderRadius: BorderRadius.circular(30),
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: const Icon(
+                              Icons.create_new_folder_outlined,
+                              color: Colors.black,
+                              size: 24,
+                            ),
+                          ),
                         ),
                       ],
                     ),
