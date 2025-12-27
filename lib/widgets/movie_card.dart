@@ -133,14 +133,15 @@ class _MovieCardState extends State<MovieCard> {
       onDragStarted: widget.onDragStarted,
       onDragEnd: (details) {
         if (widget.onDragEnd != null) widget.onDragEnd!();
-        if (mounted) {
+        // Only animate back if the drop was NOT accepted by a target (e.g. collection)
+        if (!details.wasAccepted && mounted) {
           setState(() {
             _dropCount++;
           });
         }
       },
       feedback: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 1.0, end: 1.15),
+        tween: Tween(begin: 1.0, end: 1.2), // Pop to 1.2
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutBack,
         builder: (context, scale, child) {
@@ -151,7 +152,7 @@ class _MovieCardState extends State<MovieCard> {
               height: 220,
               child: Material(
                 color: Colors.transparent,
-                elevation: 12,
+                elevation: 16, // Higher elevation
                 borderRadius: BorderRadius.circular(16),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
@@ -166,7 +167,7 @@ class _MovieCardState extends State<MovieCard> {
         },
       ),
       childWhenDragging: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 1.0, end: 0.5),
+        tween: Tween(begin: 1.0, end: 0.0), // Fade to transparent
         duration: const Duration(milliseconds: 200),
         builder: (context, opacity, child) {
           return Opacity(
@@ -191,19 +192,18 @@ class _MovieCardState extends State<MovieCard> {
             ? TweenAnimationBuilder<double>(
                 key: ValueKey(_dropCount), // Restart animation on drop
                 tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 400),
-                curve: Curves.easeOutQuart,
+                duration: const Duration(milliseconds: 800), // Slower, fluid
+                curve: Curves.elasticOut, // Bounce effect
                 builder: (context, value, child) {
-                  // value goes 0.0 -> 1.0
-                  // Scale: 1.1 -> 1.0
-                  final scale = 1.1 - (0.1 * value);
-                  // Opacity: 0.5 -> 1.0
-                  final opacity = 0.5 + (0.5 * value);
+                  // Scale: 1.2 -> 1.0
+                  final scale = 1.2 - (0.2 * value);
+                  // Opacity: 0.0 -> 1.0
+                  final opacity = value; // Simple linear opacity or easeIn
 
                   return Transform.scale(
                     scale: scale,
                     child: Opacity(
-                      opacity: opacity,
+                      opacity: opacity.clamp(0.0, 1.0),
                       child: cardContent,
                     ),
                   );
