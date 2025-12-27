@@ -181,9 +181,17 @@ class _MovieCardState extends State<MovieCard> {
           if (widget.onTap != null) {
             widget.onTap!();
           } else {
+            // Custom "Zoom" Transition
             Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => MovieDetailScreen(movie: widget.movie),
+              PageRouteBuilder(
+                transitionDuration: const Duration(milliseconds: 600),
+                reverseTransitionDuration: const Duration(milliseconds: 600),
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: MovieDetailScreen(movie: widget.movie),
+                  );
+                },
               ),
             );
           }
