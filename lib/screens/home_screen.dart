@@ -563,10 +563,10 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                   ],
                 ),
 
-                // 2. Filter Chips (Minimal spacing)
+                // 2. Filter Chips (Aligned with search bar)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                     child: Row(
                       children: [
                         _buildFilterChip('All'),
