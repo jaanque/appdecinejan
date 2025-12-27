@@ -16,6 +16,8 @@ import 'collection_detail_screen.dart';
 import '../widgets/movie_card.dart';
 import '../widgets/collection_card.dart';
 import '../widgets/animations/fade_in_up.dart';
+import '../widgets/app_loader.dart';
+import '../widgets/skeletons.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -31,7 +33,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final TMDBService _tmdbService = TMDBService();
   String _result = '';
   String? _posterUrl;
-  bool _isLoading = false;
+  bool _isLoading = false; // For URL processing
+  bool _isFetchingData = true; // For initial data load
   List<Movie> _searchHistory = [];
   List<Collection> _collections = [];
   List<dynamic> _gridItems = []; // Unified list
@@ -70,6 +73,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _refreshData() async {
+    if (_searchHistory.isEmpty && _collections.isEmpty) {
+      setState(() => _isFetchingData = true);
+    }
+
     final movies = await _fetchSearchHistory();
     final collections = await _fetchCollections();
 
@@ -77,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _searchHistory = movies;
         _collections = collections;
+        _isFetchingData = false;
         _applyFilter();
       });
     }
@@ -546,12 +554,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
         children: [
           // Main Content
           if (_isLoading)
-            const Center(
-              child: CircularProgressIndicator(
-                color: Colors.black,
-                strokeWidth: 2,
-              ),
-            )
+            const AppLoader()
           else
             CustomScrollView(
               slivers: [
@@ -634,7 +637,23 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                 ),
 
                 // 3. Content (Unified Grid)
-                if (_gridItems.isNotEmpty) ...[
+                if (_isFetchingData)
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    sliver: SliverGrid(
+                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.55,
+                        crossAxisSpacing: 20,
+                        mainAxisSpacing: 24,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => const MovieCardSkeleton(),
+                        childCount: 6,
+                      ),
+                    ),
+                  )
+                else if (_gridItems.isNotEmpty) ...[
                   SliverPadding(
                     key: ValueKey(_currentFilter), // Forces rebuild and animation on filter change
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),

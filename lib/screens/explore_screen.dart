@@ -3,6 +3,7 @@ import '../models/movie.dart';
 import '../services/tmdb_service.dart';
 import '../widgets/movie_card.dart';
 import '../widgets/animations/fade_in_up.dart';
+import '../widgets/skeletons.dart';
 import 'movie_detail_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
@@ -125,9 +126,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
             ),
 
           if (_isLoading)
-            const SliverFillRemaining(
-              child: Center(
-                child: CircularProgressIndicator(color: Colors.black),
+             SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.55,
+                  crossAxisSpacing: 16,
+                  mainAxisSpacing: 16,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) => const MovieCardSkeleton(),
+                  childCount: 6,
+                ),
               ),
             )
           else if (_movies.isEmpty)
