@@ -184,11 +184,15 @@ class _MovieCardState extends State<MovieCard> {
             // Custom "Zoom" Transition
             Navigator.of(context).push(
               PageRouteBuilder(
-                transitionDuration: const Duration(milliseconds: 600),
-                reverseTransitionDuration: const Duration(milliseconds: 600),
+                transitionDuration: const Duration(milliseconds: 350),
+                reverseTransitionDuration: const Duration(milliseconds: 300),
                 pageBuilder: (context, animation, secondaryAnimation) {
                   return FadeTransition(
-                    opacity: animation,
+                    opacity: CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                      reverseCurve: Curves.easeInCubic,
+                    ),
                     child: MovieDetailScreen(movie: widget.movie),
                   );
                 },
