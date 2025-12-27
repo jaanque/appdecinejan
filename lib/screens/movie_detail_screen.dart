@@ -4,7 +4,7 @@ import '../services/tmdb_service.dart';
 import '../services/movie_service.dart';
 import 'package:intl/intl.dart';
 import 'package:palette_generator/palette_generator.dart';
-import '../widgets/app_loader.dart';
+import '../models/watch_provider.dart';
 
 class MovieDetailScreen extends StatefulWidget {
   final Movie movie;
@@ -20,6 +20,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   final TMDBService _tmdbService = TMDBService();
   final MovieService _movieService = MovieService();
   bool _isLoading = false;
+  List<WatchProvider> _watchProviders = [];
 
   // Palette State
   Color _backgroundColor = Colors.white; // Main body background
@@ -91,12 +92,28 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     if (_movie.cast == null) {
       setState(() => _isLoading = true);
       final fullMovie = await _tmdbService.getMovieDetails(_movie.title);
+
+      List<WatchProvider> providers = [];
+      if (fullMovie != null && fullMovie.tmdbId != null) {
+        // Default to 'US' for now, but method supports 'ES', 'MX' etc.
+        providers = await _tmdbService.getWatchProviders(fullMovie.tmdbId!, countryCode: 'US');
+      }
+
       if (mounted) {
         setState(() {
           if (fullMovie != null) _movie = fullMovie;
+          _watchProviders = providers;
           _isLoading = false;
         });
       }
+    } else if (_movie.tmdbId != null) {
+        // Even if cast is present, providers might not be
+        final providers = await _tmdbService.getWatchProviders(_movie.tmdbId!, countryCode: 'US');
+        if (mounted) {
+          setState(() {
+            _watchProviders = providers;
+          });
+        }
     }
   }
 
@@ -109,13 +126,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Colors.white,
-        body: AppLoader(),
-      );
-    }
-
     // Calculate contrast-safe text colors
     final Color textColor = _backgroundColor.computeLuminance() > 0.5 ? Colors.black : Colors.white;
     // Secondary text should be legible. If background is light, use _mutedColor (dark). If dark, use light grey.
@@ -326,6 +336,45 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                         )).toList(),
                       ),
                     const SizedBox(height: 32),
+
+                    // Watch Providers
+                    if (_watchProviders.isNotEmpty) ...[
+                      Text(
+                        "Where to Watch",
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: _watchProviders.map((provider) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Tooltip(
+                                message: provider.providerName,
+                                child: Image.network(
+                                  provider.logoUrl,
+                                  width: 50,
+                                  height: 50,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 32),
+                    ],
 
                     // Overview
                     Text(

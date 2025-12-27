@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
-import '../widgets/app_loader.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -195,7 +194,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             backgroundColor: Colors.white,
-            body: AppLoader(),
+            body: Center(child: CircularProgressIndicator(color: Colors.black)),
           );
         }
 
@@ -401,7 +400,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                    const SizedBox(height: 24),
 
                 if (_isLoading)
-                  const AppLoader()
+                  const Center(child: CircularProgressIndicator(color: Colors.black))
                 else
                   ElevatedButton(
                     onPressed: _handleAuth,
