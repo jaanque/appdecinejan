@@ -544,7 +544,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                 // 1. Header (Minimalist: Search Row IS the AppBar)
                 SliverAppBar(
                   floating: true,
-                  pinned: false,
+                  pinned: true,
                   backgroundColor: Colors.white,
                   surfaceTintColor: Colors.transparent,
                   elevation: 0,
@@ -593,8 +593,6 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                         },
                       ),
                   ],
-                ),
-
                   bottom: PreferredSize(
                     preferredSize: const Size.fromHeight(60),
                     child: Container(
