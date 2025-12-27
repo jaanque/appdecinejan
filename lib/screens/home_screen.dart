@@ -498,6 +498,32 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
     );
   }
 
+  Widget _buildDragInstruction() {
+    return Container(
+      width: double.infinity,
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.add_to_photos_rounded, color: Colors.white, size: 20),
+          SizedBox(width: 12),
+          Text(
+            "Drop into a collection",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -536,7 +562,10 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                           "${_selectedMovieIds.length + _selectedCollectionIds.length} Selected",
                           style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                         )
-                      : _buildSearchRow(),
+                      : AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: _isDragging ? _buildDragInstruction() : _buildSearchRow(),
+                        ),
                   actions: [
                     if (_isSelectionMode)
                       IconButton(
@@ -566,18 +595,21 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                   ],
                 ),
 
-                // 2. Filter Chips (Aligned with search bar)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 24), // Increased spacing
-                    child: Row(
-                      children: [
-                        _buildFilterChip('All'),
-                        const SizedBox(width: 8),
-                        _buildFilterChip('Movies'),
-                        const SizedBox(width: 8),
-                        _buildFilterChip('Collections'),
-                      ],
+                  bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(60),
+                    child: Container(
+                      color: Colors.white.withOpacity(0.95), // Slight transparency for context
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        children: [
+                          _buildFilterChip('All'),
+                          const SizedBox(width: 8),
+                          _buildFilterChip('Movies'),
+                          const SizedBox(width: 8),
+                          _buildFilterChip('Collections'),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -728,58 +760,6 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
               ),
             ),
 
-          // Drag Instruction Hint
-          Positioned(
-            bottom: 40,
-            left: 0,
-            right: 0,
-            child: AnimatedSlide(
-              offset: _isDragging ? Offset.zero : const Offset(0, 2),
-              duration: const Duration(milliseconds: 400),
-              curve: Curves.easeOutCubic,
-              child: AnimatedOpacity(
-                opacity: _isDragging ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 300),
-                child: Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF222222).withOpacity(0.9), // Softer black
-                          borderRadius: BorderRadius.circular(30),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.add_to_photos_rounded, color: Colors.white, size: 18),
-                            SizedBox(width: 12),
-                            Text(
-                              "Drop into a collection",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
       ),
     );
