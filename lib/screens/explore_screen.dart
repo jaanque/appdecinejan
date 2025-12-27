@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/movie.dart';
 import '../services/tmdb_service.dart';
 import '../widgets/movie_card.dart';
+import '../widgets/animations/fade_in_up.dart';
 import 'movie_detail_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
@@ -148,16 +149,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 delegate: SliverChildBuilderDelegate(
                   (context, index) {
                     final movie = _movies[index];
-                    return MovieCard(
-                      movie: movie,
-                      onTap: () {
-                         Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MovieDetailScreen(movie: movie),
-                          ),
-                        );
-                      },
+                    return FadeInUp(
+                      delay: index * 50,
+                      child: MovieCard(
+                        movie: movie,
+                        onTap: () {
+                           Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MovieDetailScreen(movie: movie),
+                            ),
+                          );
+                        },
+                      ),
                     );
                   },
                   childCount: _movies.length,

@@ -15,6 +15,7 @@ import 'movie_detail_screen.dart';
 import 'collection_detail_screen.dart';
 import '../widgets/movie_card.dart';
 import '../widgets/collection_card.dart';
+import '../widgets/animations/fade_in_up.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -596,8 +597,10 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                         (context, index) {
                           final item = _gridItems[index];
 
+                          Widget child = const SizedBox.shrink();
+
                           if (item is Collection) {
-                            return CollectionCard(
+                            child = CollectionCard(
                               collection: item,
                               isSelectionMode: _isSelectionMode,
                               isSelected: item.id != null && _selectedCollectionIds.contains(item.id),
@@ -609,7 +612,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                               onUpdate: _refreshData,
                             );
                           } else if (item is Movie) {
-                            return MovieCard(
+                            child = MovieCard(
                               movie: item,
                               isSelectionMode: _isSelectionMode,
                               isSelected: item.id != null && _selectedMovieIds.contains(item.id),
@@ -631,7 +634,11 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                               },
                             );
                           }
-                          return const SizedBox.shrink();
+
+                          return FadeInUp(
+                            delay: index * 50,
+                            child: child,
+                          );
                         },
                         childCount: _gridItems.length,
                       ),
