@@ -636,6 +636,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                 // 3. Content (Unified Grid)
                 if (_gridItems.isNotEmpty) ...[
                   SliverPadding(
+                    key: ValueKey(_currentFilter), // Forces rebuild and animation on filter change
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     sliver: SliverGrid(
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
