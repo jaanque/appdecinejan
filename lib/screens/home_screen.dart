@@ -249,6 +249,39 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _showAddOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.movie_creation_outlined, color: Colors.black),
+              title: const Text('Add Movie from TikTok'),
+              onTap: () {
+                Navigator.pop(context);
+                _showInputDialog();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.folder_open_rounded, color: Colors.black),
+              title: const Text('Create Collection'),
+              onTap: () {
+                Navigator.pop(context);
+                _showCollectionDialog();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showCollectionDialog() {
     final TextEditingController nameController = TextEditingController();
     showDialog(
@@ -432,77 +465,76 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
     }
   }
 
-  void _handleSmartPasteOrSubmit() async {
-    if (_controller.text.isEmpty) {
-      final data = await Clipboard.getData(Clipboard.kTextPlain);
-      if (data?.text != null) {
-        setState(() {
-          _controller.text = data!.text!;
-        });
-      }
-    } else {
-      _processUrl();
-    }
+  void _showInputDialog() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _controller,
+                      autofocus: true,
+                      style: const TextStyle(color: Colors.black87),
+                      decoration: InputDecoration(
+                        hintText: 'Paste TikTok link...',
+                        hintStyle: TextStyle(color: Colors.grey[400]),
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 14),
+                      ),
+                      onSubmitted: (_) {
+                        Navigator.of(context).pop();
+                        _processUrl();
+                      },
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _processUrl();
+                    },
+                    icon: const Icon(Icons.arrow_forward_rounded, color: Colors.black),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildSearchRow() {
     return Row(
       children: [
-        Expanded(
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: TextField(
-              controller: _controller,
-              style: const TextStyle(fontSize: 16),
-              decoration: InputDecoration(
-                hintText: "Paste TikTok link...",
-                hintStyle: TextStyle(color: Colors.grey.shade500),
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                prefixIcon: Icon(Icons.link_rounded, color: Colors.grey.shade600),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _controller.text.isEmpty ? Icons.paste_rounded : Icons.arrow_forward_rounded,
-                    color: Colors.black,
-                  ),
-                  onPressed: _handleSmartPasteOrSubmit,
-                ),
-              ),
-              onSubmitted: (_) => _processUrl(),
-            ),
+        Icon(Icons.movie_filter_rounded, size: 32, color: Colors.black),
+        const SizedBox(width: 12),
+        const Text(
+          "loremipsum",
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            color: Colors.black,
+            letterSpacing: -0.5,
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildDragInstruction() {
-    return Container(
-      width: double.infinity,
-      height: 50,
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(30),
-      ),
-      child: const Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.add_to_photos_rounded, color: Colors.white, size: 20),
-          SizedBox(width: 12),
-          Text(
-            "Drop into a collection",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -523,7 +555,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
           else
             CustomScrollView(
               slivers: [
-                // 1. Header (Minimalist: Search Row IS the AppBar)
+                // 1. Header
                 SliverAppBar(
                   floating: true,
                   pinned: false,
@@ -545,10 +577,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                           "${_selectedMovieIds.length + _selectedCollectionIds.length} Selected",
                           style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                         )
-                      : AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 300),
-                          child: _isDragging ? _buildDragInstruction() : _buildSearchRow(),
-                        ),
+                      : _buildSearchRow(),
                   actions: [
                     if (_isSelectionMode)
                       IconButton(
@@ -558,11 +587,11 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                             : null,
                       )
                     else ...[
-                      // New Collection Icon
+                      // New Action Button (+)
                       IconButton(
-                        icon: const Icon(Icons.add, color: Colors.black),
-                        tooltip: 'New Collection',
-                        onPressed: _showCollectionDialog,
+                        icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.black, size: 28),
+                        tooltip: 'Add New',
+                        onPressed: () => _showAddOptions(context),
                       ),
                       // Menu
                       PopupMenuButton<String>(
@@ -585,10 +614,10 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                   ],
                 ),
 
-                // 2. Filter Chips (Moved to body for scroll-away effect)
+                // 2. Filter Chips (Scrollable body content)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 32), // Increased top spacing
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -607,13 +636,13 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                 // 3. Content (Unified Grid)
                 if (_gridItems.isNotEmpty) ...[
                   SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8), // Increased spacing
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     sliver: SliverGrid(
                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         childAspectRatio: 0.55,
-                        crossAxisSpacing: 20, // Increased spacing
-                        mainAxisSpacing: 24, // Increased spacing
+                        crossAxisSpacing: 20,
+                        mainAxisSpacing: 24,
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
@@ -681,7 +710,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                           ),
                           const SizedBox(height: 24),
                           const Text(
-                            "Seen a movie on TikTok?",
+                            "Start your collection",
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
@@ -691,7 +720,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            "Find the title instantly.",
+                            "Tap + to add movies or create collections.",
                             style: TextStyle(
                               fontSize: 16,
                               color: Colors.grey.shade500,
@@ -750,6 +779,58 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
               ),
             ),
 
+          // Drag Instruction Hint (Restored to Bottom)
+          Positioned(
+            bottom: 40,
+            left: 0,
+            right: 0,
+            child: AnimatedSlide(
+              offset: _isDragging ? Offset.zero : const Offset(0, 2),
+              duration: const Duration(milliseconds: 400),
+              curve: Curves.easeOutCubic,
+              child: AnimatedOpacity(
+                opacity: _isDragging ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF222222).withOpacity(0.9), // Softer black
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.add_to_photos_rounded, color: Colors.white, size: 18),
+                            SizedBox(width: 12),
+                            Text(
+                              "Drop into a collection",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -764,18 +845,15 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.black : Colors.grey.shade100,
+          color: isSelected ? Colors.grey.shade200 : Colors.transparent, // Very subtle
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? Colors.black : Colors.grey.shade200,
-          ),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: isSelected ? Colors.white : Colors.grey.shade700,
+            color: isSelected ? Colors.black : Colors.grey.shade500,
           ),
         ),
       ),
