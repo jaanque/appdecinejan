@@ -22,6 +22,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   bool _isLoading = false;
   List<WatchProvider> _watchProviders = [];
   bool _isOverviewExpanded = false;
+  final GlobalKey _overviewKey = GlobalKey();
 
   // Palette State
   Color _backgroundColor = Colors.white; // Main body background
@@ -97,7 +98,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       List<WatchProvider> providers = [];
       if (fullMovie != null && fullMovie.tmdbId != null) {
         // Default to 'US' for now, but method supports 'ES', 'MX' etc.
-        providers = await _tmdbService.getWatchProviders(fullMovie.tmdbId!, countryCode: 'US');
+        providers = await _tmdbService.getWatchProviders(
+          fullMovie.tmdbId!,
+          mediaType: fullMovie.mediaType ?? 'movie',
+          countryCode: 'US'
+        );
       }
 
       if (mounted) {
@@ -109,7 +114,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
       }
     } else if (_movie.tmdbId != null) {
         // Even if cast is present, providers might not be
-        final providers = await _tmdbService.getWatchProviders(_movie.tmdbId!, countryCode: 'US');
+        final providers = await _tmdbService.getWatchProviders(
+          _movie.tmdbId!,
+          mediaType: _movie.mediaType ?? 'movie',
+          countryCode: 'US'
+        );
         if (mounted) {
           setState(() {
             _watchProviders = providers;
@@ -246,8 +255,42 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                   Colors.white,
                                   fillColor: _vibrantColor.withOpacity(0.2),
                                 ),
+                              const SizedBox(width: 12),
+                              if (_movie.mediaType == 'tv' && _movie.numberOfSeasons != null)
+                                _buildGlassBadge(
+                                  Icons.layers_rounded,
+                                  "${_movie.numberOfSeasons} S • ${_movie.numberOfEpisodes ?? '?'} E",
+                                  Colors.white,
+                                  fillColor: _vibrantColor.withOpacity(0.2),
+                                ),
                             ],
                           ),
+                          const SizedBox(height: 16),
+                          // Status Badge (if available and relevant)
+                          if (_movie.status != null)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _movie.status == 'Ended' || _movie.status == 'Canceled'
+                                    ? Colors.red.withOpacity(0.2)
+                                    : Colors.green.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: _movie.status == 'Ended' || _movie.status == 'Canceled'
+                                      ? Colors.red.withOpacity(0.5)
+                                      : Colors.green.withOpacity(0.5),
+                                ),
+                              ),
+                              child: Text(
+                                _movie.status!.toUpperCase(),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -319,7 +362,90 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // Watch Providers (High Priority)
+                    // Overview (Collapsible with Animation)
+                    Text(
+                      "Storyline",
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+                    ),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _isOverviewExpanded = !_isOverviewExpanded;
+                        });
+
+                        if (!_isOverviewExpanded) {
+                          // Scroll back up when collapsing
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            Scrollable.ensureVisible(
+                              _overviewKey.currentContext!,
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                              alignment: 0.1, // Leave a little space at top
+                            );
+                          });
+                        }
+                      },
+                      child: Column(
+                        key: _overviewKey,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                            alignment: Alignment.topCenter,
+                            child: Stack(
+                              children: [
+                                Text(
+                                  _movie.overview ?? "No overview available.",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    height: 1.6,
+                                    color: secondaryTextColor,
+                                  ),
+                                  maxLines: _isOverviewExpanded ? null : 4,
+                                  overflow: _isOverviewExpanded ? TextOverflow.visible : TextOverflow.fade,
+                                ),
+                                if (!_isOverviewExpanded && (_movie.overview?.length ?? 0) > 150)
+                                  Positioned(
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    child: Container(
+                                      height: 60,
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                          colors: [
+                                            _backgroundColor.withOpacity(0.0),
+                                            _backgroundColor,
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if ((_movie.overview?.length ?? 0) > 150)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                _isOverviewExpanded ? "Show less" : "Read more",
+                                style: TextStyle(
+                                  color: _vibrantColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Watch Providers
                     if (_watchProviders.isNotEmpty) ...[
                       Text(
                         "Where to Watch",
@@ -364,48 +490,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                       ),
                       const SizedBox(height: 32),
                     ],
-
-                    // Overview (Collapsible)
-                    Text(
-                      "Storyline",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
-                    ),
-                    const SizedBox(height: 12),
-                    InkWell(
-                      onTap: () {
-                        setState(() {
-                          _isOverviewExpanded = !_isOverviewExpanded;
-                        });
-                      },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            _movie.overview ?? "No overview available.",
-                            style: TextStyle(
-                              fontSize: 16,
-                              height: 1.6,
-                              color: secondaryTextColor,
-                            ),
-                            maxLines: _isOverviewExpanded ? null : 4,
-                            overflow: _isOverviewExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
-                          ),
-                          if ((_movie.overview?.length ?? 0) > 150)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: Text(
-                                _isOverviewExpanded ? "Show less" : "Read more",
-                                style: TextStyle(
-                                  color: _vibrantColor,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
 
                     // Genres (Moved to bottom or hidden if considered clutter, keeping for now but less prominent)
                     if (_movie.genres != null && _movie.genres!.isNotEmpty) ...[

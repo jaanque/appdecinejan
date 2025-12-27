@@ -103,10 +103,11 @@ class TMDBService {
     return [];
   }
 
-  Future<List<WatchProvider>> getWatchProviders(int movieId, {String countryCode = 'US'}) async {
+  Future<List<WatchProvider>> getWatchProviders(int id, {String mediaType = 'movie', String countryCode = 'US'}) async {
     final client = HttpClient();
     try {
-      final uri = Uri.parse('https://api.themoviedb.org/3/movie/$movieId/watch/providers');
+      final type = mediaType == 'tv' ? 'tv' : 'movie';
+      final uri = Uri.parse('https://api.themoviedb.org/3/$type/$id/watch/providers');
 
       final request = await client.getUrl(uri);
       request.headers.set(HttpHeaders.authorizationHeader, 'Bearer $_accessToken');
@@ -198,6 +199,10 @@ class TMDBService {
         final int? budget = json['budget'];
         final int? revenue = json['revenue'];
 
+        // TV Series specific fields
+        final int? numberOfSeasons = json['number_of_seasons'];
+        final int? numberOfEpisodes = json['number_of_episodes'];
+
         List<CastMember> cast = [];
         if (json['credits'] != null && json['credits']['cast'] != null) {
           final castList = json['credits']['cast'] as List;
@@ -223,6 +228,8 @@ class TMDBService {
           budget: budget,
           revenue: revenue,
           cast: cast,
+          numberOfSeasons: numberOfSeasons,
+          numberOfEpisodes: numberOfEpisodes,
         );
       }
     } catch (e) {
