@@ -127,28 +127,41 @@ class MovieCard extends StatelessWidget {
       onDragEnd: (details) {
         if (onDragEnd != null) onDragEnd!();
       },
-      feedback: Transform.scale(
-        scale: 1.05,
-        child: SizedBox(
-          width: 150,
-          height: 220,
-          child: Material(
-            color: Colors.transparent,
-            elevation: 8,
-            borderRadius: BorderRadius.circular(16),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(16),
-              child: Image.network(
-                movie.posterUrl,
-                fit: BoxFit.cover,
+      feedback: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 1.0, end: 1.15),
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOutBack,
+        builder: (context, scale, child) {
+          return Transform.scale(
+            scale: scale,
+            child: SizedBox(
+              width: 150,
+              height: 220,
+              child: Material(
+                color: Colors.transparent,
+                elevation: 12,
+                borderRadius: BorderRadius.circular(16),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.network(
+                    movie.posterUrl,
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
-      childWhenDragging: Opacity(
-        opacity: 0.5,
-        child: cardContent,
+      childWhenDragging: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 1.0, end: 0.5),
+        duration: const Duration(milliseconds: 200),
+        builder: (context, opacity, child) {
+          return Opacity(
+            opacity: opacity,
+            child: cardContent,
+          );
+        },
       ),
       child: GestureDetector(
         onTap: () {
