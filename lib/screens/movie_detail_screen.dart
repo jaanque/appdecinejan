@@ -4,7 +4,7 @@ import '../services/tmdb_service.dart';
 import '../services/movie_service.dart';
 import 'package:intl/intl.dart';
 import 'package:palette_generator/palette_generator.dart';
-import '../widgets/skeletons.dart';
+import '../widgets/app_loader.dart';
 
 class MovieDetailScreen extends StatefulWidget {
   final Movie movie;
@@ -110,9 +110,9 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: Colors.white,
-        body: const MovieDetailSkeleton(),
+        body: AppLoader(),
       );
     }
 
