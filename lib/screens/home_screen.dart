@@ -442,6 +442,59 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
     }
   }
 
+  Widget _buildSearchRow() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(30),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: TextField(
+              controller: _controller,
+              style: const TextStyle(fontSize: 16),
+              decoration: InputDecoration(
+                hintText: "Paste TikTok link...",
+                hintStyle: TextStyle(color: Colors.grey.shade500),
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                prefixIcon: Icon(Icons.link_rounded, color: Colors.grey.shade600),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _controller.text.isEmpty ? Icons.paste_rounded : Icons.arrow_forward_rounded,
+                    color: Colors.black,
+                  ),
+                  onPressed: _handleSmartPasteOrSubmit,
+                ),
+              ),
+              onSubmitted: (_) => _processUrl(),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        InkWell(
+          onTap: _showCollectionDialog,
+          borderRadius: BorderRadius.circular(30),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: const Icon(
+              Icons.create_new_folder_outlined,
+              color: Colors.black,
+              size: 24,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -459,7 +512,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
           else
             CustomScrollView(
               slivers: [
-                // 1. Header
+                // 1. Header (Minimalist: Search Row IS the AppBar)
                 SliverAppBar(
                   floating: true,
                   pinned: false,
@@ -468,6 +521,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                   elevation: 0,
                   automaticallyImplyLeading: false,
                   titleSpacing: 16,
+                  // If selection mode, show minimal selection header
                   leading: _isSelectionMode
                       ? IconButton(
                           icon: const Icon(Icons.close, color: Colors.black),
@@ -479,21 +533,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                           "${_selectedMovieIds.length + _selectedCollectionIds.length} Selected",
                           style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                         )
-                      : Row(
-                          children: [
-                            Icon(Icons.movie_filter_rounded, size: 32, color: Colors.black),
-                            const SizedBox(width: 12),
-                            const Text(
-                              "loremipsum",
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.black,
-                                letterSpacing: -0.5,
-                              ),
-                            ),
-                          ],
-                        ),
+                      : _buildSearchRow(),
                   actions: [
                     if (_isSelectionMode)
                       IconButton(
@@ -502,7 +542,8 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                             ? _deleteSelectedItems
                             : null,
                       )
-                    else
+                    else if (!_isSelectionMode)
+                      // Keep the menu but make it minimal/hidden
                       PopupMenuButton<String>(
                         icon: const Icon(Icons.more_vert, color: Colors.black),
                         onSelected: (value) {
@@ -521,78 +562,23 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                       ),
                   ],
                 ),
-                // 2. Action Menu (Inline Search + New Filter Chips)
+
+                // 2. Filter Chips (Minimal spacing)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Row(
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.shade100,
-                                  borderRadius: BorderRadius.circular(30),
-                                  border: Border.all(color: Colors.grey.shade200),
-                                ),
-                                child: TextField(
-                                  controller: _controller,
-                                  style: const TextStyle(fontSize: 16),
-                                  decoration: InputDecoration(
-                                    hintText: "Paste TikTok link...",
-                                    hintStyle: TextStyle(color: Colors.grey.shade500),
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                                    prefixIcon: Icon(Icons.link_rounded, color: Colors.grey.shade600),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _controller.text.isEmpty ? Icons.paste_rounded : Icons.arrow_forward_rounded,
-                                        color: Colors.black,
-                                      ),
-                                      onPressed: _handleSmartPasteOrSubmit,
-                                    ),
-                                  ),
-                                  onSubmitted: (_) => _processUrl(),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            InkWell(
-                              onTap: _showCollectionDialog,
-                              borderRadius: BorderRadius.circular(30),
-                              child: Container(
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.grey.shade300),
-                                ),
-                                child: const Icon(
-                                  Icons.create_new_folder_outlined,
-                                  color: Colors.black,
-                                  size: 24,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        // Filter Chips
-                        Row(
-                          children: [
-                            _buildFilterChip('All'),
-                            const SizedBox(width: 8),
-                            _buildFilterChip('Movies'),
-                            const SizedBox(width: 8),
-                            _buildFilterChip('Collections'),
-                          ],
-                        ),
+                        _buildFilterChip('All'),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('Movies'),
+                        const SizedBox(width: 8),
+                        _buildFilterChip('Collections'),
                       ],
                     ),
                   ),
                 ),
+
                 // 3. Content (Unified Grid)
                 if (_gridItems.isNotEmpty) ...[
                   SliverPadding(
