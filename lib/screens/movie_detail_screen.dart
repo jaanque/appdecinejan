@@ -21,9 +21,12 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   bool _isLoading = false;
 
   // Palette State
-  Color _backgroundColor = Colors.white;
-  Color _darkColor = Colors.black; // For gradient end and connector
-  Color _accentColor = Colors.black; // For buttons/text accents
+  Color _backgroundColor = Colors.white; // Main body background
+  Color _darkColor = Colors.black; // Gradient end & connector
+  Color _vibrantColor = Colors.blue; // Primary accents (buttons)
+  Color _mutedColor = Colors.grey; // Secondary text
+  Color _chipColor = Colors.grey.shade100; // Chip background
+  Color _chipTextColor = Colors.black; // Chip text
 
   @override
   void initState() {
@@ -37,51 +40,44 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   Future<void> _updatePalette() async {
     final PaletteGenerator generator = await PaletteGenerator.fromImageProvider(
       NetworkImage(_movie.posterUrl),
-      size: const Size(100, 150), // Reduce size for performance
+      size: const Size(100, 150),
       maximumColorCount: 20,
     );
 
     if (mounted) {
       setState(() {
-        // 1. Dark Color (Connector & Gradient End)
-        // Prefer DarkVibrant, then DarkMuted, then Dominant (if dark), else Black
-        _darkColor =
-            generator.darkVibrantColor?.color ??
-            generator.darkMutedColor?.color ??
-            ((generator.dominantColor?.color.computeLuminance() ?? 1.0) < 0.2
-                ? generator.dominantColor!.color
-                : Colors.black);
+        // 1. Core Colors
+        final darkVibrant = generator.darkVibrantColor?.color;
+        final vibrant = generator.vibrantColor?.color;
+        final lightVibrant = generator.lightVibrantColor?.color;
+        final darkMuted = generator.darkMutedColor?.color;
+        final muted = generator.mutedColor?.color;
+        final lightMuted = generator.lightMutedColor?.color;
+        final dominant = generator.dominantColor?.color;
 
-        // 2. Background Color (Content Sheet)
-        // We want a very soft tint. Take the LightMuted or Dominant and wash it out.
-        Color baseLight =
-            generator.lightMutedColor?.color ??
-            generator.lightVibrantColor?.color ??
-            generator.dominantColor?.color ??
-            Colors.white;
+        // 2. Connector & Header Dark Color
+        // Prioritize a rich dark color from the poster
+        _darkColor = darkVibrant ?? darkMuted ?? (dominant != null && dominant.computeLuminance() < 0.2 ? dominant : Colors.black);
 
-        // Ensure it's very light (high luminance)
-        if (baseLight.computeLuminance() < 0.8) {
-          _backgroundColor = Color.alphaBlend(
-            Colors.white.withOpacity(0.9),
-            baseLight,
-          );
-        } else {
-          _backgroundColor = baseLight.withOpacity(
-            0.3,
-          ); // Apply opacity to blend with white background of scaffold? No, scaffold is white.
-          _backgroundColor = Color.alphaBlend(
-            baseLight.withOpacity(0.2),
-            Colors.white,
-          );
-        }
+        // 3. Main Background Color (Soft Tint)
+        // Use a very light muted or vibrant tone blended with white
+        final Color baseLight = lightMuted ?? lightVibrant ?? dominant ?? Colors.white;
+        // Blend heavily with white to ensure it's a soft tint
+        _backgroundColor = Color.alphaBlend(baseLight.withOpacity(0.15), Colors.white);
 
-        // 3. Accent Color (Buttons)
-        // Use Vibrant or Dominant
-        _accentColor =
-            generator.vibrantColor?.color ??
-            generator.dominantColor?.color ??
-            Colors.black;
+        // 4. Vibrant Accent (Buttons)
+        // Prefer the most vibrant option
+        _vibrantColor = vibrant ?? darkVibrant ?? dominant ?? Colors.black;
+
+        // 5. Muted Text Color
+        // For secondary text, use a dark muted tone if available, else standard grey/black
+        _mutedColor = darkMuted ?? muted ?? Colors.black54;
+
+        // 6. Chip Colors
+        // Background: Light vibrant or light muted with transparency
+        _chipColor = (lightVibrant ?? lightMuted ?? dominant ?? Colors.grey.shade200).withOpacity(0.2);
+        // Text: Dark vibrant or dark muted
+        _chipTextColor = darkVibrant ?? darkMuted ?? Colors.black87;
       });
     }
   }
@@ -112,35 +108,33 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Determine text color based on background luminance (usually black since we force light bg)
-    final Color textColor = _backgroundColor.computeLuminance() > 0.5
-        ? Colors.black
-        : Colors.white;
-    final Color secondaryTextColor = textColor.withOpacity(0.6);
+    // Calculate contrast-safe text colors
+    final Color textColor = _backgroundColor.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+    // Secondary text should be legible. If background is light, use _mutedColor (dark). If dark, use light grey.
+    final Color secondaryTextColor = _backgroundColor.computeLuminance() > 0.5
+        ? _mutedColor
+        : Colors.white70;
 
     return Scaffold(
-      backgroundColor: _backgroundColor, // Apply dynamic background to Scaffold
+      backgroundColor: _backgroundColor,
       body: CustomScrollView(
         slivers: [
           // 1. Immersive Header
           SliverAppBar(
             expandedHeight: 500,
             pinned: true,
-            backgroundColor: _backgroundColor, // Match Scaffold
+            backgroundColor: _backgroundColor,
             elevation: 0,
             leading: Container(
               margin: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
+                color: _backgroundColor.withOpacity(0.8), // Adapt to theme
                 shape: BoxShape.circle,
                 boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                  ),
+                  BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8),
                 ],
               ),
-              child: const BackButton(color: Colors.black),
+              child: BackButton(color: textColor), // Adapt icon color
             ),
             flexibleSpace: FlexibleSpaceBar(
               background: Stack(
@@ -160,11 +154,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          _darkColor.withOpacity(0.2),
-                          _darkColor.withOpacity(0.8),
-                          _darkColor, // Fade to dynamic dark color
+                          _darkColor.withOpacity(0.3),
+                          _darkColor.withOpacity(0.9),
+                          _darkColor, // Seamless transition to connector
                         ],
-                        stops: const [0.0, 0.5, 0.85, 1.0],
+                        stops: const [0.0, 0.4, 0.85, 1.0],
                       ),
                     ),
                   ),
@@ -187,18 +181,23 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                               color: Colors.white,
                               height: 1.1,
                               letterSpacing: -0.5,
+                              shadows: [
+                                Shadow(blurRadius: 10, color: Colors.black45, offset: Offset(0, 2)),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 8),
                           // Tagline
-                          if (_movie.tagline != null &&
-                              _movie.tagline!.isNotEmpty)
+                          if (_movie.tagline != null && _movie.tagline!.isNotEmpty)
                             Text(
                               _movie.tagline!,
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withOpacity(0.9),
                                 fontStyle: FontStyle.italic,
+                                shadows: const [
+                                  Shadow(blurRadius: 4, color: Colors.black45, offset: Offset(0, 1)),
+                                ],
                               ),
                             ),
                           const SizedBox(height: 24),
@@ -210,6 +209,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                   Icons.star_rounded,
                                   _movie.voteAverage!.toStringAsFixed(1),
                                   Colors.amber,
+                                  fillColor: _vibrantColor.withOpacity(0.3),
                                 ),
                               const SizedBox(width: 12),
                               if (_movie.releaseDate != null)
@@ -217,6 +217,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                   Icons.calendar_today_rounded,
                                   _movie.releaseDate!.split('-')[0],
                                   Colors.white,
+                                  fillColor: _vibrantColor.withOpacity(0.2),
                                 ),
                               const SizedBox(width: 12),
                               if (_movie.runtime != null)
@@ -224,6 +225,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                   Icons.access_time_rounded,
                                   _formatRuntime(_movie.runtime),
                                   Colors.white,
+                                  fillColor: _vibrantColor.withOpacity(0.2),
                                 ),
                             ],
                           ),
@@ -240,14 +242,19 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
           SliverToBoxAdapter(
             child: Container(
               decoration: BoxDecoration(
-                color: _darkColor, // Continue dynamic dark fade
+                color: _darkColor, // Matches gradient end
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: _backgroundColor, // Dynamic light background
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(24),
-                  ),
+                  color: _backgroundColor, // Dynamic light body
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5)
+                    ),
+                  ],
                 ),
                 padding: const EdgeInsets.fromLTRB(24, 32, 24, 40),
                 child: Column(
@@ -259,46 +266,33 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                         Expanded(
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              // Save logic
-                              _movieService.saveMovie(
-                                _movie.title,
-                                _movie.posterUrl,
-                              );
+                              _movieService.saveMovie(_movie.title, _movie.posterUrl);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("Saved to Library"),
-                                ),
+                                const SnackBar(content: Text("Saved to Library")),
                               );
                             },
                             icon: const Icon(Icons.bookmark_add_rounded),
                             label: const Text("Add to Library"),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  _accentColor, // Use dynamic accent
-                              foregroundColor:
-                                  _accentColor.computeLuminance() > 0.5
-                                  ? Colors.black
-                                  : Colors.white,
+                              backgroundColor: _vibrantColor, // Dynamic accent
+                              foregroundColor: _vibrantColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              elevation: 4,
+                              shadowColor: _vibrantColor.withOpacity(0.4),
                             ),
                           ),
                         ),
                         const SizedBox(width: 16),
                         Container(
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(
-                              0.05,
-                            ), // Subtle tint
+                            color: _chipColor, // Subtle tint
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: IconButton(
                             onPressed: () {},
                             icon: const Icon(Icons.share_rounded),
-                            color: textColor,
+                            color: _chipTextColor,
                             padding: const EdgeInsets.all(16),
                           ),
                         ),
@@ -311,32 +305,24 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                       Wrap(
                         spacing: 8,
                         runSpacing: 8,
-                        children: _movie.genres!
-                            .map(
-                              (g) => Chip(
-                                label: Text(g),
-                                backgroundColor: Colors.white.withOpacity(0.6),
-                                side: BorderSide(
-                                  color: Colors.black.withOpacity(0.1),
-                                ),
-                                labelStyle: TextStyle(
-                                  color: textColor.withOpacity(0.8),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            )
-                            .toList(),
+                        children: _movie.genres!.map((g) => Chip(
+                          label: Text(g),
+                          backgroundColor: _chipColor,
+                          side: BorderSide.none,
+                          labelStyle: TextStyle(
+                            color: _chipTextColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                        )).toList(),
                       ),
                     const SizedBox(height: 32),
 
                     // Overview
                     Text(
                       "Storyline",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -353,38 +339,35 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                     if (_movie.cast != null && _movie.cast!.isNotEmpty) ...[
                       Text(
                         "Cast",
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: textColor,
-                        ),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
-                        height: 100,
+                        height: 110,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
                           itemCount: _movie.cast!.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(width: 16),
+                          separatorBuilder: (_, __) => const SizedBox(width: 16),
                           itemBuilder: (context, index) {
                             final actor = _movie.cast![index];
                             return Column(
                               children: [
-                                CircleAvatar(
-                                  radius: 32,
-                                  backgroundImage: actor.profileUrl != null
-                                      ? NetworkImage(actor.profileUrl!)
-                                      : null,
-                                  backgroundColor: Colors.black.withOpacity(
-                                    0.1,
+                                Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: _vibrantColor.withOpacity(0.3), width: 2),
                                   ),
-                                  child: actor.profileUrl == null
-                                      ? Icon(
-                                          Icons.person,
-                                          color: secondaryTextColor,
-                                        )
-                                      : null,
+                                  padding: const EdgeInsets.all(2),
+                                  child: CircleAvatar(
+                                    radius: 30,
+                                    backgroundImage: actor.profileUrl != null
+                                        ? NetworkImage(actor.profileUrl!)
+                                        : null,
+                                    backgroundColor: _chipColor,
+                                    child: actor.profileUrl == null
+                                        ? Icon(Icons.person, color: _mutedColor)
+                                        : null,
+                                  ),
                                 ),
                                 const SizedBox(height: 8),
                                 SizedBox(
@@ -393,8 +376,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                     actor.name,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                      color: textColor,
+                                      fontWeight: FontWeight.w600,
+                                      color: textColor
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -417,13 +400,20 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     );
   }
 
-  Widget _buildGlassBadge(IconData icon, String text, Color iconColor) {
+  Widget _buildGlassBadge(IconData icon, String text, Color iconColor, {Color? fillColor}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.2),
+        color: fillColor ?? Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -435,7 +425,10 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.bold,
+              shadows: [
+                 Shadow(blurRadius: 2, color: Colors.black26, offset: Offset(0, 1)),
+              ],
             ),
           ),
         ],
