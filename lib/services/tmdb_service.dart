@@ -123,9 +123,33 @@ class TMDBService {
 
         final regionProviders = results[countryCode];
 
-        if (regionProviders != null && regionProviders['flatrate'] != null) {
-          final providersJson = regionProviders['flatrate'] as List;
-          return providersJson.map((p) => WatchProvider.fromJson(p)).toList();
+        if (regionProviders != null) {
+          // Combine flatrate, rent, and buy providers
+          // Use a Map to ensure uniqueness by provider_id
+          final Map<int, WatchProvider> uniqueProviders = {};
+
+          void addProviders(dynamic providerList) {
+            if (providerList != null) {
+              for (var p in providerList) {
+                final provider = WatchProvider.fromJson(p);
+                // Prefer providers with lower display priority (higher relevance)
+                if (!uniqueProviders.containsKey(provider.providerId) ||
+                    provider.displayPriority < uniqueProviders[provider.providerId]!.displayPriority) {
+                  uniqueProviders[provider.providerId] = provider;
+                }
+              }
+            }
+          }
+
+          addProviders(regionProviders['flatrate']);
+          addProviders(regionProviders['rent']);
+          addProviders(regionProviders['buy']);
+
+          // Sort by display priority
+          final sorted = uniqueProviders.values.toList()
+            ..sort((a, b) => a.displayPriority.compareTo(b.displayPriority));
+
+          return sorted;
         }
       }
     } catch (e) {

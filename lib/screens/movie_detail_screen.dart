@@ -21,6 +21,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   final MovieService _movieService = MovieService();
   bool _isLoading = false;
   List<WatchProvider> _watchProviders = [];
+  bool _isOverviewExpanded = false;
 
   // Palette State
   Color _backgroundColor = Colors.white; // Main body background
@@ -318,26 +319,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                     ),
                     const SizedBox(height: 32),
 
-                    // Genres
-                    if (_movie.genres != null)
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: _movie.genres!.map((g) => Chip(
-                          label: Text(g),
-                          backgroundColor: _chipColor,
-                          side: BorderSide.none,
-                          labelStyle: TextStyle(
-                            color: _chipTextColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12
-                          ),
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                        )).toList(),
-                      ),
-                    const SizedBox(height: 32),
-
-                    // Watch Providers
+                    // Watch Providers (High Priority)
                     if (_watchProviders.isNotEmpty) ...[
                       Text(
                         "Where to Watch",
@@ -367,6 +349,13 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                   provider.logoUrl,
                                   width: 50,
                                   height: 50,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      Container(
+                                          width: 50,
+                                          height: 50,
+                                          color: Colors.grey.shade300,
+                                          child: const Icon(Icons.tv_off)
+                                      ),
                                 ),
                               ),
                             ),
@@ -376,21 +365,72 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                       const SizedBox(height: 32),
                     ],
 
-                    // Overview
+                    // Overview (Collapsible)
                     Text(
                       "Storyline",
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
                     ),
                     const SizedBox(height: 12),
-                    Text(
-                      _movie.overview ?? "No overview available.",
-                      style: TextStyle(
-                        fontSize: 16,
-                        height: 1.6,
-                        color: secondaryTextColor,
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _isOverviewExpanded = !_isOverviewExpanded;
+                        });
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _movie.overview ?? "No overview available.",
+                            style: TextStyle(
+                              fontSize: 16,
+                              height: 1.6,
+                              color: secondaryTextColor,
+                            ),
+                            maxLines: _isOverviewExpanded ? null : 4,
+                            overflow: _isOverviewExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                          ),
+                          if ((_movie.overview?.length ?? 0) > 150)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                _isOverviewExpanded ? "Show less" : "Read more",
+                                style: TextStyle(
+                                  color: _vibrantColor,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 32),
+
+                    // Genres (Moved to bottom or hidden if considered clutter, keeping for now but less prominent)
+                    if (_movie.genres != null && _movie.genres!.isNotEmpty) ...[
+                       Text(
+                        "Genres",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: _movie.genres!.map((g) => Chip(
+                          label: Text(g),
+                          backgroundColor: _chipColor,
+                          side: BorderSide.none,
+                          labelStyle: TextStyle(
+                            color: _chipTextColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                        )).toList(),
+                      ),
+                       const SizedBox(height: 32),
+                    ],
 
                     // Cast
                     if (_movie.cast != null && _movie.cast!.isNotEmpty) ...[
