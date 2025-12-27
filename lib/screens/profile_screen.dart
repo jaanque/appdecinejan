@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
+import '../widgets/app_loader.dart';
+import '../widgets/skeletons.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -191,6 +193,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return StreamBuilder<AuthState>(
       stream: _authService.onAuthStateChange,
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            backgroundColor: Colors.white,
+            body: ProfileSkeleton(),
+          );
+        }
+
         final session = _authService.currentSession;
 
         // If logged in, show profile
@@ -393,7 +402,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                    const SizedBox(height: 24),
 
                 if (_isLoading)
-                  const Center(child: CircularProgressIndicator(color: Colors.black))
+                  const AppLoader()
                 else
                   ElevatedButton(
                     onPressed: _handleAuth,

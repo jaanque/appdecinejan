@@ -3,6 +3,7 @@ import '../models/collection.dart';
 import '../models/movie.dart';
 import '../services/collection_service.dart';
 import '../widgets/movie_card.dart';
+import '../widgets/skeletons.dart';
 
 class CollectionDetailScreen extends StatefulWidget {
   final Collection collection;
@@ -67,7 +68,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
         ],
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const GridSkeleton()
           : _movies.isEmpty
               ? Center(
                   child: Column(

@@ -4,6 +4,7 @@ import '../services/tmdb_service.dart';
 import '../services/movie_service.dart';
 import 'package:intl/intl.dart';
 import 'package:palette_generator/palette_generator.dart';
+import '../widgets/skeletons.dart';
 
 class MovieDetailScreen extends StatefulWidget {
   final Movie movie;
@@ -108,6 +109,13 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.white,
+        body: const MovieDetailSkeleton(),
+      );
+    }
+
     // Calculate contrast-safe text colors
     final Color textColor = _backgroundColor.computeLuminance() > 0.5 ? Colors.black : Colors.white;
     // Secondary text should be legible. If background is light, use _mutedColor (dark). If dark, use light grey.
