@@ -21,6 +21,8 @@ class Movie {
   final int? budget;
   final int? revenue;
   final List<CastMember>? cast;
+  final int? numberOfSeasons;
+  final int? numberOfEpisodes;
 
   Movie({
     this.id,
@@ -39,6 +41,8 @@ class Movie {
     this.budget,
     this.revenue,
     this.cast,
+    this.numberOfSeasons,
+    this.numberOfEpisodes,
   });
 
   // Local Storage (SharedPreferences)
@@ -58,6 +62,8 @@ class Movie {
         'budget': budget,
         'revenue': revenue,
         'cast': cast?.map((c) => c.toJson()).toList(),
+        'numberOfSeasons': numberOfSeasons,
+        'numberOfEpisodes': numberOfEpisodes,
       };
 
   factory Movie.fromJson(Map<String, dynamic> json) {
@@ -77,6 +83,8 @@ class Movie {
       budget: json['budget'] as int?,
       revenue: json['revenue'] as int?,
       cast: (json['cast'] as List?)?.map((e) => CastMember.fromJson(e)).toList(),
+      numberOfSeasons: json['numberOfSeasons'] as int?,
+      numberOfEpisodes: json['numberOfEpisodes'] as int?,
     );
   }
 
@@ -111,6 +119,8 @@ class Movie {
     int? budget,
     int? revenue,
     List<CastMember>? cast,
+    int? numberOfSeasons,
+    int? numberOfEpisodes,
   }) {
     return Movie(
       id: id ?? this.id,
@@ -129,6 +139,8 @@ class Movie {
       budget: budget ?? this.budget,
       revenue: revenue ?? this.revenue,
       cast: cast ?? this.cast,
+      numberOfSeasons: numberOfSeasons ?? this.numberOfSeasons,
+      numberOfEpisodes: numberOfEpisodes ?? this.numberOfEpisodes,
     );
   }
 }

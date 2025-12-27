@@ -552,7 +552,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
         children: [
           // Main Content
           if (_isLoading)
-            const AppLoader()
+            const Center(child: CircularProgressIndicator(color: Colors.black))
           else
             CustomScrollView(
               slivers: [
