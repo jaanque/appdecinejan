@@ -17,7 +17,6 @@ import '../widgets/movie_card.dart';
 import '../widgets/collection_card.dart';
 import '../widgets/animations/fade_in_up.dart';
 import '../widgets/app_loader.dart';
-import '../widgets/skeletons.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -638,20 +637,8 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
 
                 // 3. Content (Unified Grid)
                 if (_isFetchingData)
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    sliver: SliverGrid(
-                       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        childAspectRatio: 0.55,
-                        crossAxisSpacing: 20,
-                        mainAxisSpacing: 24,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) => const MovieCardSkeleton(),
-                        childCount: 6,
-                      ),
-                    ),
+                  const SliverFillRemaining(
+                    child: AppLoader(),
                   )
                 else if (_gridItems.isNotEmpty) ...[
                   SliverPadding(
