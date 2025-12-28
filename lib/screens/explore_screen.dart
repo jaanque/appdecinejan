@@ -19,7 +19,7 @@ class _ExploreScreenState extends State<ExploreScreen>
     with TickerProviderStateMixin {
   // Usamos late para asegurar que se inicialicen en initState
   late AnimationController _controller;
-  late AnimationController _iconShakeController;
+  AnimationController? _iconShakeController;
   ShakeDetector? _shakeDetector;
 
   final MovieService _movieService = MovieService();
@@ -42,10 +42,21 @@ class _ExploreScreenState extends State<ExploreScreen>
       duration: const Duration(seconds: 10),
     )..repeat();
 
+    _initShakeController();
+  }
+
+  void _initShakeController() {
     _iconShakeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: false);
+  }
+
+  AnimationController get _safeIconShakeController {
+    if (_iconShakeController == null) {
+      _initShakeController();
+    }
+    return _iconShakeController!;
   }
 
   void _initShakeDetector() {
@@ -139,7 +150,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   @override
   void dispose() {
     _controller.dispose();
-    _iconShakeController.dispose();
+    _iconShakeController?.dispose();
     _shakeDetector?.stopListening();
     super.dispose();
   }
@@ -201,11 +212,11 @@ class _ExploreScreenState extends State<ExploreScreen>
           ] else ...[
             // Animated Shake Icon
             AnimatedBuilder(
-              animation: _iconShakeController,
+              animation: _safeIconShakeController,
               builder: (context, child) {
                 // Create a shake effect: only shake during the first 20% of the cycle
                 double offset = 0;
-                final t = _iconShakeController.value;
+                final t = _safeIconShakeController.value;
                 if (t < 0.2) {
                   // Shake 3 times in the first 0.2 (400ms)
                   offset = sin(t * 5 * 2 * pi) * 0.1;
