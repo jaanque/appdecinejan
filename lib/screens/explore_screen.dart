@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import '../models/movie.dart';
-import '../services/tmdb_service.dart';
-import '../widgets/movie_card.dart';
-import '../widgets/animations/fade_in_up.dart';
-import 'movie_detail_screen.dart';
+import 'dart:math';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -13,57 +9,22 @@ class ExploreScreen extends StatefulWidget {
   State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
-class _ExploreScreenState extends State<ExploreScreen> {
-  final TMDBService _tmdbService = TMDBService();
-  final TextEditingController _searchController = TextEditingController();
-
-  List<Movie> _movies = [];
-  bool _isLoading = true;
-  bool _isSearching = false;
+class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-    _loadTrendingMovies();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 4),
+    )..repeat(reverse: true);
   }
 
   @override
   void dispose() {
-    _searchController.dispose();
+    _controller.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadTrendingMovies() async {
-    setState(() => _isLoading = true);
-    final movies = await _tmdbService.getTrendingMovies();
-    if (mounted) {
-      setState(() {
-        _movies = movies;
-        _isLoading = false;
-        _isSearching = false;
-      });
-    }
-  }
-
-  Future<void> _searchMovies(String query) async {
-    if (query.isEmpty) {
-      _loadTrendingMovies();
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _isSearching = true;
-    });
-
-    final movies = await _tmdbService.searchMovies(query);
-
-    if (mounted) {
-      setState(() {
-        _movies = movies;
-        _isLoading = false;
-      });
-    }
   }
 
   @override
@@ -72,147 +33,90 @@ class _ExploreScreenState extends State<ExploreScreen> {
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Magical Aura Background
-          Positioned(
-            top: -100,
-            left: -100,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.purple.withOpacity(0.3),
-              ),
-            ),
+          // Dynamic Aura - Left Side
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Positioned(
+                top: MediaQuery.of(context).size.height * 0.2 + (sin(_controller.value * 2 * pi) * 50),
+                left: -100,
+                child: Container(
+                  width: 200,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.purple.withOpacity(0.4),
+                        Colors.blue.withOpacity(0.4),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-          Positioned(
-            top: 100,
-            right: -50,
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.blue.withOpacity(0.3),
-              ),
-            ),
+
+          // Dynamic Aura - Right Side
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Positioned(
+                bottom: MediaQuery.of(context).size.height * 0.2 + (cos(_controller.value * 2 * pi) * 50),
+                right: -100,
+                child: Container(
+                  width: 200,
+                  height: 400,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.pink.withOpacity(0.4),
+                        Colors.orange.withOpacity(0.4),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
-          Positioned(
-            bottom: -50,
-            left: 50,
-            child: Container(
-              width: 350,
-              height: 350,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.pink.withOpacity(0.2),
-              ),
-            ),
-          ),
+
+          // Blur Overlay
           Positioned.fill(
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+              filter: ImageFilter.blur(sigmaX: 60, sigmaY: 60),
               child: Container(
-                color: Colors.white.withOpacity(0.4), // Soft white overlay
+                color: Colors.white.withOpacity(0.1),
               ),
             ),
           ),
 
           // Content
-          CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                floating: true,
-                pinned: false,
-                backgroundColor: Colors.transparent, // Transparent to show aura
-                surfaceTintColor: Colors.transparent,
-                elevation: 0,
-                automaticallyImplyLeading: false,
-            titleSpacing: 16,
-            title: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: TextField(
-                controller: _searchController,
-                style: const TextStyle(fontSize: 16),
-                decoration: InputDecoration(
-                  hintText: "Search TMDB...",
-                  hintStyle: TextStyle(color: Colors.grey.shade500),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  prefixIcon: Icon(Icons.search_rounded, color: Colors.grey.shade600),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear_rounded, color: Colors.grey),
-                          onPressed: () {
-                            _searchController.clear();
-                            _loadTrendingMovies();
-                          },
-                        )
-                      : null,
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.vibration_rounded, // Shake/Phone icon
+                  size: 64,
+                  color: Colors.grey.shade400,
                 ),
-                onSubmitted: _searchMovies,
-                textInputAction: TextInputAction.search,
-              ),
-            ),
-          ),
-
-          if (!_isLoading && !_isSearching)
-             const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Text(
-                  "Trending Now",
+                const SizedBox(height: 24),
+                const Text(
+                  "Shake to discover",
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                    letterSpacing: -0.5,
                   ),
                 ),
-              ),
+              ],
             ),
-
-          if (_isLoading)
-            const SliverFillRemaining(
-              child: Center(child: CircularProgressIndicator(color: Colors.black)),
-            )
-          else if (_movies.isEmpty)
-             const SliverFillRemaining(
-              child: Center(
-                child: Text("No movies found"),
-              ),
-            )
-          else
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 0.55,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final movie = _movies[index];
-                    return FadeInUp(
-                      delay: index * 50,
-                      child: MovieCard(
-                        movie: movie,
-                        // Allow MovieCard to handle navigation with its custom animation
-                      ),
-                    );
-                  },
-                  childCount: _movies.length,
-                ),
-              ),
-            ),
-
-                // Bottom padding
-                const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            ],
           ),
         ],
       ),
