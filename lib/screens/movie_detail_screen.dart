@@ -5,8 +5,6 @@ import '../services/movie_service.dart';
 import 'package:intl/intl.dart';
 import 'package:palette_generator/palette_generator.dart';
 import '../models/watch_provider.dart';
-import '../models/collection.dart';
-import '../services/collection_service.dart';
 
 class MovieDetailScreen extends StatefulWidget {
   final Movie movie;
@@ -134,22 +132,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
     final int hours = minutes ~/ 60;
     final int mins = minutes % 60;
     return '${hours}h ${mins}m';
-  }
-
-  void _showAddToCollectionDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return _AddToCollectionSheet(
-          movie: _movie,
-          onCollectionCreated: () => setState(() {}),
-        );
-      },
-    );
   }
 
   @override
@@ -340,35 +322,23 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Action Buttons (Save, Share)
+                    // Action Buttons (Share)
                     Row(
                       children: [
                         Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _showAddToCollectionDialog(context),
-                            icon: const Icon(Icons.bookmark_add_rounded),
-                            label: const Text("Add to Collection"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _vibrantColor, // Dynamic accent
-                              foregroundColor: _vibrantColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              elevation: 4,
-                              shadowColor: _vibrantColor.withOpacity(0.4),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: _chipColor, // Subtle tint
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: _chipColor, // Subtle tint
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.share_rounded),
-                            color: _chipTextColor,
-                            padding: const EdgeInsets.all(16),
+                            child: TextButton.icon(
+                              onPressed: () {},
+                              icon: Icon(Icons.share_rounded, color: _chipTextColor),
+                              label: Text("Share", style: TextStyle(color: _chipTextColor, fontWeight: FontWeight.bold)),
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -624,162 +594,6 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                  Shadow(blurRadius: 2, color: Colors.black26, offset: Offset(0, 1)),
               ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AddToCollectionSheet extends StatefulWidget {
-  final Movie movie;
-  final VoidCallback? onCollectionCreated;
-
-  const _AddToCollectionSheet({required this.movie, this.onCollectionCreated});
-
-  @override
-  State<_AddToCollectionSheet> createState() => _AddToCollectionSheetState();
-}
-
-class _AddToCollectionSheetState extends State<_AddToCollectionSheet> {
-  final CollectionService _collectionService = CollectionService();
-  final MovieService _movieService = MovieService();
-  List<Collection> _collections = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchCollections();
-  }
-
-  Future<void> _fetchCollections() async {
-    final collections = await _collectionService.getCollections();
-    if (mounted) {
-      setState(() {
-        _collections = collections;
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _addToCollection(Collection collection) async {
-    // 1. Ensure movie is saved in DB to get an ID
-    // If widget.movie.id is null, we need to save it or look it up.
-    // MovieService.saveMovie inserts and doesn't return ID easily in current implementation.
-    // However, if we assume saveMovie is idempotent or we can search for it.
-
-    // Simplification: Trigger save, then search, then add.
-    // Or better: update MovieService to return the saved movie or ID.
-    // Given constraints, we'll try to save (if not present) and assume we can query it.
-
-    try {
-      if (widget.movie.id == null) {
-        // This is a TMDB movie, not yet in our DB with a Supabase ID.
-        // Save it first.
-        await _movieService.saveMovie(widget.movie.title, widget.movie.posterUrl);
-        // Now we need to fetch it to get the ID.
-        // This is a bit inefficient but safe given current Service structure.
-        final movies = await _movieService.getMovies();
-        final savedMovie = movies.firstWhere((m) => m.title == widget.movie.title, orElse: () => widget.movie);
-
-        if (savedMovie.id != null) {
-           await _collectionService.addMovieToCollection(collection.id!, savedMovie.id!);
-        }
-      } else {
-        await _collectionService.addMovieToCollection(collection.id!, widget.movie.id!);
-      }
-
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Added to ${collection.name}")),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Error adding to collection")),
-        );
-      }
-    }
-  }
-
-  void _showCreateCollectionDialog() {
-    final TextEditingController nameController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: const Text("New Collection"),
-          content: TextField(
-            controller: nameController,
-            autofocus: true,
-            decoration: const InputDecoration(hintText: "Collection Name"),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () async {
-                final name = nameController.text.trim();
-                if (name.isNotEmpty) {
-                  await _collectionService.createCollection(name);
-                  if (widget.onCollectionCreated != null) widget.onCollectionCreated!();
-                  Navigator.pop(context);
-                  _fetchCollections(); // Refresh list
-                }
-              },
-              child: const Text("Create"),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            "Add to Collection",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator(color: Colors.black))
-          else if (_collections.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: const Text("No collections found. Create one!"),
-            )
-          else
-            Flexible(
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: _collections.length,
-                itemBuilder: (context, index) {
-                  final collection = _collections[index];
-                  return ListTile(
-                    leading: const Icon(Icons.folder_outlined),
-                    title: Text(collection.name),
-                    onTap: () => _addToCollection(collection),
-                  );
-                },
-              ),
-            ),
-          const SizedBox(height: 8),
-          ListTile(
-            leading: const Icon(Icons.add_circle_outline, color: Colors.blue),
-            title: const Text("Create New Collection", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-            onTap: _showCreateCollectionDialog,
           ),
         ],
       ),
