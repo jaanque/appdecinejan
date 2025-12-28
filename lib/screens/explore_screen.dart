@@ -21,73 +21,14 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
   void _initController() {
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 6),
-    )..repeat(reverse: true);
+      duration: const Duration(seconds: 4),
+    )..repeat();
   }
 
   @override
   void dispose() {
     _controller?.dispose();
     super.dispose();
-  }
-
-  Widget _buildAnimatedOrb({
-    required Animation<double> animation,
-    required Alignment alignment,
-    required List<Color> colors,
-    required double offsetMultiplier,
-    bool isVerticalMovement = true,
-  }) {
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) {
-        final double value = sin(animation.value * 2 * pi + offsetMultiplier);
-        final double offset = value * 40; // Increased movement range for dynamism
-
-        double? top, bottom, left, right;
-        final screenHeight = MediaQuery.of(context).size.height;
-
-        // Base positions based on alignment
-        if (alignment == Alignment.topLeft) {
-          top = -100 + (isVerticalMovement ? offset : 0);
-          left = -100 + (!isVerticalMovement ? offset : 0);
-        } else if (alignment == Alignment.topRight) {
-          top = -100 + (isVerticalMovement ? offset : 0);
-          right = -100 + (!isVerticalMovement ? offset : 0);
-        } else if (alignment == Alignment.bottomLeft) {
-          bottom = -100 + (isVerticalMovement ? offset : 0);
-          left = -100 + (!isVerticalMovement ? offset : 0);
-        } else if (alignment == Alignment.bottomRight) {
-          bottom = -100 + (isVerticalMovement ? offset : 0);
-          right = -100 + (!isVerticalMovement ? offset : 0);
-        } else if (alignment == Alignment.centerLeft) {
-          top = (screenHeight / 2) - 150 + offset; // Center vertical + sway
-          left = -120; // Slightly offscreen
-        } else if (alignment == Alignment.centerRight) {
-          top = (screenHeight / 2) - 150 + offset; // Center vertical + sway
-          right = -120; // Slightly offscreen
-        }
-
-        return Positioned(
-          top: top,
-          bottom: bottom,
-          left: left,
-          right: right,
-          child: Container(
-            width: 300,
-            height: 300,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: colors.map((c) => c.withOpacity(0.6)).toList(), // Slightly more opacity
-                center: Alignment.center,
-                radius: 0.6,
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -98,67 +39,17 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Top Left - Purple/Blue
-          _buildAnimatedOrb(
-            animation: _controller!,
-            alignment: Alignment.topLeft,
-            colors: [Colors.purple, Colors.deepPurpleAccent],
-            offsetMultiplier: 0,
-            isVerticalMovement: true,
-          ),
-
-          // Top Right - Blue/Cyan
-          _buildAnimatedOrb(
-            animation: _controller!,
-            alignment: Alignment.topRight,
-            colors: [Colors.blue, Colors.cyan],
-            offsetMultiplier: pi / 2,
-            isVerticalMovement: false, // Move horizontally
-          ),
-
-          // Center Left - Indigo/Blue (Bridging Top/Bottom Left)
-          _buildAnimatedOrb(
-            animation: _controller!,
-            alignment: Alignment.centerLeft,
-            colors: [Colors.indigo, Colors.blueAccent],
-            offsetMultiplier: pi / 4,
-            isVerticalMovement: true,
-          ),
-
-          // Center Right - Pink/Purple (Bridging Top/Bottom Right)
-          _buildAnimatedOrb(
-            animation: _controller!,
-            alignment: Alignment.centerRight,
-            colors: [Colors.pinkAccent, Colors.purpleAccent],
-            offsetMultiplier: 3 * pi / 4,
-            isVerticalMovement: true,
-          ),
-
-          // Bottom Right - Pink/Orange
-          _buildAnimatedOrb(
-            animation: _controller!,
-            alignment: Alignment.bottomRight,
-            colors: [Colors.pink, Colors.orange],
-            offsetMultiplier: pi,
-            isVerticalMovement: true,
-          ),
-
-          // Bottom Left - Teal/Green
-          _buildAnimatedOrb(
-            animation: _controller!,
-            alignment: Alignment.bottomLeft,
-            colors: [Colors.teal, Colors.greenAccent],
-            offsetMultiplier: 3 * pi / 2,
-            isVerticalMovement: false, // Move horizontally
-          ),
-
-          // Heavy Blur to blend everything into a frame aura
+          // Glowing Border
           Positioned.fill(
-            child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
-              child: Container(
-                color: Colors.white.withOpacity(0.3),
-              ),
+            child: AnimatedBuilder(
+              animation: _controller!,
+              builder: (context, child) {
+                return CustomPaint(
+                  painter: _GlowingBorderPainter(
+                    animationValue: _controller!.value,
+                  ),
+                );
+              },
             ),
           ),
 
@@ -188,5 +79,51 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
         ],
       ),
     );
+  }
+}
+
+class _GlowingBorderPainter extends CustomPainter {
+  final double animationValue;
+
+  _GlowingBorderPainter({required this.animationValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 40 // Thick border for the glow
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 30); // Heavy blur
+
+    // Apple Intelligence-like colors
+    final colors = [
+      Colors.cyanAccent,
+      Colors.blue,
+      Colors.purple,
+      Colors.pink,
+      Colors.orangeAccent,
+      Colors.cyanAccent, // Wrap around
+    ];
+
+    // Create a rotating sweep gradient
+    final gradient = SweepGradient(
+      colors: colors,
+      stops: const [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
+      transform: GradientRotation(animationValue * 2 * pi),
+    );
+
+    paint.shader = gradient.createShader(rect);
+
+    // Draw the rectangle path
+    // We inset slightly so the blur doesn't get clipped too much at the very edge,
+    // although stroke stays centered on the path.
+    // If strokeWidth is 40, we might want to draw closely to the edge.
+    // Let's draw exactly on the edge.
+    canvas.drawRect(rect, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _GlowingBorderPainter oldDelegate) {
+    return oldDelegate.animationValue != animationValue;
   }
 }
