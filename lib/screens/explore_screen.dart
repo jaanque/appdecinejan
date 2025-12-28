@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'dart:math';
+import 'package:shake/shake.dart';
+import '../models/movie.dart';
+import '../services/movie_service.dart';
+import '../services/ai_service.dart';
+import '../services/tmdb_service.dart';
+import 'movie_detail_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -11,23 +17,99 @@ class ExploreScreen extends StatefulWidget {
 
 class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProviderStateMixin {
   AnimationController? _controller;
+  ShakeDetector? _shakeDetector;
+  final MovieService _movieService = MovieService();
+  final AIService _aiService = AIService();
+  final TMDBService _tmdbService = TMDBService();
+
+  bool _isSearching = false;
+  Movie? _recommendedMovie;
 
   @override
   void initState() {
     super.initState();
     _initController();
+    _initShakeDetector();
   }
 
   void _initController() {
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10), // Slow, elegant rotation
+      duration: const Duration(seconds: 10),
     )..repeat();
+  }
+
+  void _initShakeDetector() {
+    _shakeDetector = ShakeDetector.autoStart(
+      onPhoneShake: _handleShake,
+      minimumShakeCount: 1,
+      shakeSlopTimeMS: 500,
+      shakeCountResetTime: 3000,
+      shakeThresholdGravity: 2.7,
+    );
+  }
+
+  Future<void> _handleShake() async {
+    if (_isSearching || _recommendedMovie != null) return;
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      // 1. Get recent movies
+      final movies = await _movieService.getMovies();
+
+      // 2. Get AI recommendation
+      final recommendedTitle = await _aiService.getRecommendation(movies);
+
+      if (recommendedTitle != null) {
+        // 3. Get Details
+        final movie = await _tmdbService.getMovieDetails(recommendedTitle);
+
+        if (mounted) {
+          setState(() {
+            _recommendedMovie = movie;
+            _isSearching = false;
+          });
+        }
+      } else {
+        if (mounted) setState(() => _isSearching = false);
+      }
+    } catch (e) {
+      debugPrint("Error discovering movie: $e");
+      if (mounted) setState(() => _isSearching = false);
+    }
+  }
+
+  void _resetDiscovery() {
+    setState(() {
+      _recommendedMovie = null;
+      _isSearching = false;
+    });
+  }
+
+  Future<void> _addToHome() async {
+    if (_recommendedMovie == null) return;
+
+    try {
+      await _movieService.saveMovie(_recommendedMovie!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("${_recommendedMovie!.title} added to Home")),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error adding movie")),
+      );
+    }
   }
 
   @override
   void dispose() {
     _controller?.dispose();
+    _shakeDetector?.stopListening();
     super.dispose();
   }
 
@@ -55,29 +137,113 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
 
           // Content
           Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.vibration_rounded,
-                  size: 64,
-                  color: Colors.grey.shade400, // Softer grey for discretion
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  "Shake to discover",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black54, // Softer black
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ],
-            ),
+            child: _recommendedMovie != null
+                ? _buildRecommendationCard()
+                : _buildShakePrompt(),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildShakePrompt() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        if (_isSearching)
+          const CircularProgressIndicator(color: Colors.black54)
+        else ...[
+          Icon(
+            Icons.vibration_rounded,
+            size: 64,
+            color: Colors.grey.shade400,
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            "Shake to discover",
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black54,
+              letterSpacing: -0.5,
+            ),
+          ),
+        ]
+      ],
+    );
+  }
+
+  Widget _buildRecommendationCard() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => MovieDetailScreen(
+                  movie: _recommendedMovie!,
+                  showSaveButton: true, // Enable saving for discovery
+                )
+              )
+            );
+          },
+          child: Hero(
+            tag: _recommendedMovie!.title, // Simple tag
+            child: Container(
+              width: 250,
+              height: 375,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+                image: DecorationImage(
+                  image: NetworkImage(_recommendedMovie!.posterUrl),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+        Text(
+          _recommendedMovie!.title,
+          style: const TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
+            color: Colors.black87,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton.icon(
+              onPressed: _addToHome,
+              icon: const Icon(Icons.add),
+              label: const Text("Add to Home"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+            ),
+            const SizedBox(width: 16),
+            IconButton(
+              onPressed: _resetDiscovery,
+              icon: const Icon(Icons.refresh),
+              tooltip: "Try again",
+            ),
+          ],
+        )
+      ],
     );
   }
 }

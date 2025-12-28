@@ -8,8 +8,9 @@ import '../models/watch_provider.dart';
 
 class MovieDetailScreen extends StatefulWidget {
   final Movie movie;
+  final bool showSaveButton;
 
-  const MovieDetailScreen({super.key, required this.movie});
+  const MovieDetailScreen({super.key, required this.movie, this.showSaveButton = false});
 
   @override
   State<MovieDetailScreen> createState() => _MovieDetailScreenState();
@@ -322,9 +323,42 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Action Buttons (Share)
+                    // Action Buttons (Save, Share)
                     Row(
                       children: [
+                        if (widget.showSaveButton) ...[
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () async {
+                                try {
+                                  await _movieService.saveMovie(_movie);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text("Movie added to Home")),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text("Error adding movie")),
+                                    );
+                                  }
+                                }
+                              },
+                              icon: const Icon(Icons.add_rounded),
+                              label: const Text("Add to Home"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: _vibrantColor,
+                                foregroundColor: _vibrantColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                elevation: 4,
+                                shadowColor: _vibrantColor.withOpacity(0.4),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                        ],
                         Expanded(
                           child: Container(
                             decoration: BoxDecoration(

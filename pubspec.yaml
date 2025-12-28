@@ -14,6 +14,7 @@ dependencies:
   shared_preferences: ^2.2.0
   intl: ^0.20.2
   palette_generator: ^0.3.3+3
+  shake: ^2.2.0
 
 dev_dependencies:
   flutter_test:
