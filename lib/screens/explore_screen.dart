@@ -21,7 +21,7 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
   void _initController() {
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 10), // Slower, more elegant rotation
+      duration: const Duration(seconds: 10), // Slow, elegant rotation
     )..repeat();
   }
 
@@ -39,13 +39,13 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Full Screen Dynamic Aura
+          // Discrete Dynamic Glow
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _controller!,
               builder: (context, child) {
                 return CustomPaint(
-                  painter: _AuroraPainter(
+                  painter: _DiscreteGlowPainter(
                     animationValue: _controller!.value,
                   ),
                 );
@@ -61,7 +61,7 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
                 Icon(
                   Icons.vibration_rounded,
                   size: 64,
-                  color: Colors.black54,
+                  color: Colors.grey.shade400, // Softer grey for discretion
                 ),
                 const SizedBox(height: 24),
                 const Text(
@@ -69,7 +69,7 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Colors.black54, // Softer black
                     letterSpacing: -0.5,
                   ),
                 ),
@@ -82,25 +82,23 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
   }
 }
 
-class _AuroraPainter extends CustomPainter {
+class _DiscreteGlowPainter extends CustomPainter {
   final double animationValue;
 
-  _AuroraPainter({required this.animationValue});
+  _DiscreteGlowPainter({required this.animationValue});
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
-    final center = rect.center;
 
-    // Apple Intelligence / Aurora Colors
-    // Using slightly lighter/pastel variants for a professional full-screen wash
+    // Apple Intelligence Colors - Pastel & Soft
     final colors = [
-      const Color(0xFF40C8E0).withOpacity(0.6), // Cyan
-      const Color(0xFF6439FF).withOpacity(0.6), // Deep Blue/Purple
-      const Color(0xFFA839FF).withOpacity(0.6), // Purple
-      const Color(0xFFFF39A0).withOpacity(0.6), // Pink
-      const Color(0xFFFF8539).withOpacity(0.6), // Orange
-      const Color(0xFF40C8E0).withOpacity(0.6), // Cyan loop
+      const Color(0xFF40C8E0).withOpacity(0.3), // Cyan
+      const Color(0xFF6439FF).withOpacity(0.3), // Deep Blue/Purple
+      const Color(0xFFA839FF).withOpacity(0.3), // Purple
+      const Color(0xFFFF39A0).withOpacity(0.3), // Pink
+      const Color(0xFFFF8539).withOpacity(0.3), // Orange
+      const Color(0xFF40C8E0).withOpacity(0.3), // Cyan loop
     ];
 
     // Rotating Gradient
@@ -111,43 +109,24 @@ class _AuroraPainter extends CustomPainter {
       transform: GradientRotation(animationValue * 2 * pi),
     );
 
-    // Breathing effect (pulsing scale/intensity)
-    final breathe = sin(animationValue * 2 * pi); // -1 to 1
+    // Subtle Breathing (very minimal)
+    final breathe = sin(animationValue * 2 * pi) * 0.5 + 0.5; // 0 to 1
 
     final paint = Paint()
-      ..style = PaintingStyle.stroke // Keep stroke to push color from edges inward
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 30 + (breathe * 10) // 30-40px wide stroke
       ..strokeJoin = StrokeJoin.round
       ..strokeCap = StrokeCap.round
-      ..shader = gradient.createShader(rect);
+      ..shader = gradient.createShader(rect)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 40); // High blur for softness
 
-    // To cover the whole screen with a "border" based effect, we need a massive stroke
-    // and massive blur.
-
-    // Layer 1: The Deep Background Wash
-    // Covers almost everything with soft diffuse light
-    paint
-      ..strokeWidth = size.shortestSide * 1.5 // Massive stroke
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 120); // Huge blur
-
-    canvas.saveLayer(rect, Paint()..color = Colors.white.withOpacity(0.5));
-    canvas.drawRect(rect.inflate(50), paint); // Draw slightly outside to pull gradient in
-    canvas.restore();
-
-    // Layer 2: The "Structure" (Slightly more defined, moving)
-    // This retains the "border" feel but highly diffused into the center
-    paint
-      ..strokeWidth = size.shortestSide * 0.5 + (breathe * 20)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 60);
-
-    canvas.saveLayer(rect, Paint()..color = Colors.white.withOpacity(0.8));
+    // Draw strictly along the edge (centered on the boundary)
+    // This allows the blur to bleed inward softly while the main stroke is half-offscreen
     canvas.drawRect(rect, paint);
-    canvas.restore();
-
-    // We removed the sharp core layer entirely to ensure it's "mas difuminado" (more blurred)
   }
 
   @override
-  bool shouldRepaint(covariant _AuroraPainter oldDelegate) {
+  bool shouldRepaint(covariant _DiscreteGlowPainter oldDelegate) {
     return oldDelegate.animationValue != animationValue;
   }
 }
