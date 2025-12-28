@@ -18,13 +18,14 @@ import '../widgets/collection_card.dart';
 import '../widgets/animations/fade_in_up.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final ValueNotifier<int>? refreshNotifier;
+  const HomeScreen({super.key, this.refreshNotifier});
 
   @override
-  State<HomeScreen> createState() => HomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _controller = TextEditingController();
   final MovieService _movieService = MovieService();
   final CollectionService _collectionService = CollectionService();
@@ -53,6 +54,7 @@ class HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    widget.refreshNotifier?.addListener(_handleRefresh);
     _refreshData();
     // Listen to Auth State Changes to reload data if user logs in
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
@@ -66,12 +68,13 @@ class HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
+    widget.refreshNotifier?.removeListener(_handleRefresh);
     _controller.dispose();
     super.dispose();
   }
 
-  Future<void> refreshData() async {
-    return _refreshData();
+  void _handleRefresh() {
+    _refreshData();
   }
 
   Future<void> _refreshData() async {
