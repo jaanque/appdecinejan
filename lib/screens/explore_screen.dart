@@ -42,9 +42,10 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
       animation: animation,
       builder: (context, child) {
         final double value = sin(animation.value * 2 * pi + offsetMultiplier);
-        final double offset = value * 30; // Movement range
+        final double offset = value * 40; // Increased movement range for dynamism
 
         double? top, bottom, left, right;
+        final screenHeight = MediaQuery.of(context).size.height;
 
         // Base positions based on alignment
         if (alignment == Alignment.topLeft) {
@@ -59,6 +60,12 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
         } else if (alignment == Alignment.bottomRight) {
           bottom = -100 + (isVerticalMovement ? offset : 0);
           right = -100 + (!isVerticalMovement ? offset : 0);
+        } else if (alignment == Alignment.centerLeft) {
+          top = (screenHeight / 2) - 150 + offset; // Center vertical + sway
+          left = -120; // Slightly offscreen
+        } else if (alignment == Alignment.centerRight) {
+          top = (screenHeight / 2) - 150 + offset; // Center vertical + sway
+          right = -120; // Slightly offscreen
         }
 
         return Positioned(
@@ -72,7 +79,7 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
-                colors: colors.map((c) => c.withOpacity(0.5)).toList(),
+                colors: colors.map((c) => c.withOpacity(0.6)).toList(), // Slightly more opacity
                 center: Alignment.center,
                 radius: 0.6,
               ),
@@ -107,6 +114,24 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
             colors: [Colors.blue, Colors.cyan],
             offsetMultiplier: pi / 2,
             isVerticalMovement: false, // Move horizontally
+          ),
+
+          // Center Left - Indigo/Blue (Bridging Top/Bottom Left)
+          _buildAnimatedOrb(
+            animation: _controller!,
+            alignment: Alignment.centerLeft,
+            colors: [Colors.indigo, Colors.blueAccent],
+            offsetMultiplier: pi / 4,
+            isVerticalMovement: true,
+          ),
+
+          // Center Right - Pink/Purple (Bridging Top/Bottom Right)
+          _buildAnimatedOrb(
+            animation: _controller!,
+            alignment: Alignment.centerRight,
+            colors: [Colors.pinkAccent, Colors.purpleAccent],
+            offsetMultiplier: 3 * pi / 4,
+            isVerticalMovement: true,
           ),
 
           // Bottom Right - Pink/Orange
