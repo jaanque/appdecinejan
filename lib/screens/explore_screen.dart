@@ -10,11 +10,15 @@ class ExploreScreen extends StatefulWidget {
 }
 
 class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+  AnimationController? _controller;
 
   @override
   void initState() {
     super.initState();
+    _initController();
+  }
+
+  void _initController() {
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
@@ -23,22 +27,27 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
 
   @override
   void dispose() {
-    _controller.dispose();
+    _controller?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Ensure controller is initialized (handles hot reload case)
+    if (_controller == null) {
+      _initController();
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
           // Dynamic Aura - Left Side
           AnimatedBuilder(
-            animation: _controller,
+            animation: _controller!,
             builder: (context, child) {
               return Positioned(
-                top: MediaQuery.of(context).size.height * 0.2 + (sin(_controller.value * 2 * pi) * 50),
+                top: MediaQuery.of(context).size.height * 0.2 + (sin(_controller!.value * 2 * pi) * 50),
                 left: -100,
                 child: Container(
                   width: 200,
@@ -61,10 +70,10 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
 
           // Dynamic Aura - Right Side
           AnimatedBuilder(
-            animation: _controller,
+            animation: _controller!,
             builder: (context, child) {
               return Positioned(
-                bottom: MediaQuery.of(context).size.height * 0.2 + (cos(_controller.value * 2 * pi) * 50),
+                bottom: MediaQuery.of(context).size.height * 0.2 + (cos(_controller!.value * 2 * pi) * 50),
                 right: -100,
                 child: Container(
                   width: 200,
