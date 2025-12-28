@@ -21,7 +21,7 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
   void _initController() {
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
+      duration: const Duration(seconds: 10), // Slower, more elegant rotation
     )..repeat();
   }
 
@@ -39,13 +39,13 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Glowing Border
+          // Full Screen Dynamic Aura
           Positioned.fill(
             child: AnimatedBuilder(
               animation: _controller!,
               builder: (context, child) {
                 return CustomPaint(
-                  painter: _GlowingBorderPainter(
+                  painter: _AuroraPainter(
                     animationValue: _controller!.value,
                   ),
                 );
@@ -61,7 +61,7 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
                 Icon(
                   Icons.vibration_rounded,
                   size: 64,
-                  color: Colors.grey.shade600,
+                  color: Colors.black54,
                 ),
                 const SizedBox(height: 24),
                 const Text(
@@ -82,23 +82,25 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
   }
 }
 
-class _GlowingBorderPainter extends CustomPainter {
+class _AuroraPainter extends CustomPainter {
   final double animationValue;
 
-  _GlowingBorderPainter({required this.animationValue});
+  _AuroraPainter({required this.animationValue});
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
+    final center = rect.center;
 
-    // Apple Intelligence Colors
+    // Apple Intelligence / Aurora Colors
+    // Using slightly lighter/pastel variants for a professional full-screen wash
     final colors = [
-      const Color(0xFF40C8E0), // Cyan
-      const Color(0xFF6439FF), // Deep Blue/Purple
-      const Color(0xFFA839FF), // Purple
-      const Color(0xFFFF39A0), // Pink
-      const Color(0xFFFF8539), // Orange
-      const Color(0xFF40C8E0), // Cyan loop
+      const Color(0xFF40C8E0).withOpacity(0.6), // Cyan
+      const Color(0xFF6439FF).withOpacity(0.6), // Deep Blue/Purple
+      const Color(0xFFA839FF).withOpacity(0.6), // Purple
+      const Color(0xFFFF39A0).withOpacity(0.6), // Pink
+      const Color(0xFFFF8539).withOpacity(0.6), // Orange
+      const Color(0xFF40C8E0).withOpacity(0.6), // Cyan loop
     ];
 
     // Rotating Gradient
@@ -109,41 +111,43 @@ class _GlowingBorderPainter extends CustomPainter {
       transform: GradientRotation(animationValue * 2 * pi),
     );
 
-    // Breathing effect (pulsing opacity/width)
-    final breathe = sin(animationValue * 4 * pi); // -1 to 1
+    // Breathing effect (pulsing scale/intensity)
+    final breathe = sin(animationValue * 2 * pi); // -1 to 1
 
     final paint = Paint()
-      ..style = PaintingStyle.stroke
+      ..style = PaintingStyle.stroke // Keep stroke to push color from edges inward
       ..strokeJoin = StrokeJoin.round
       ..strokeCap = StrokeCap.round
       ..shader = gradient.createShader(rect);
 
-    // Layer 1: Ambient Atmosphere (Wide, Soft, Diffuse)
-    // Acts as the backlight
-    paint
-      ..strokeWidth = 80 + (breathe * 5)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 50);
+    // To cover the whole screen with a "border" based effect, we need a massive stroke
+    // and massive blur.
 
-    canvas.saveLayer(rect, Paint()..color = Colors.white.withOpacity(0.4));
+    // Layer 1: The Deep Background Wash
+    // Covers almost everything with soft diffuse light
+    paint
+      ..strokeWidth = size.shortestSide * 1.5 // Massive stroke
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 120); // Huge blur
+
+    canvas.saveLayer(rect, Paint()..color = Colors.white.withOpacity(0.5));
+    canvas.drawRect(rect.inflate(50), paint); // Draw slightly outside to pull gradient in
+    canvas.restore();
+
+    // Layer 2: The "Structure" (Slightly more defined, moving)
+    // This retains the "border" feel but highly diffused into the center
+    paint
+      ..strokeWidth = size.shortestSide * 0.5 + (breathe * 20)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 60);
+
+    canvas.saveLayer(rect, Paint()..color = Colors.white.withOpacity(0.8));
     canvas.drawRect(rect, paint);
     canvas.restore();
 
-    // Layer 2: Defined Glow (Closer to edge, slightly sharper)
-    // Gives the structure without a hard line
-    paint
-      ..strokeWidth = 30 + (breathe * 2)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
-
-    canvas.saveLayer(rect, Paint()..color = Colors.white.withOpacity(0.7));
-    canvas.drawRect(rect, paint);
-    canvas.restore();
-
-    // Note: Removed the "Core" 2px line to comply with "no marques tu los bordes" (don't mark the borders).
-    // The glow itself defines the boundary.
+    // We removed the sharp core layer entirely to ensure it's "mas difuminado" (more blurred)
   }
 
   @override
-  bool shouldRepaint(covariant _GlowingBorderPainter oldDelegate) {
+  bool shouldRepaint(covariant _AuroraPainter oldDelegate) {
     return oldDelegate.animationValue != animationValue;
   }
 }
