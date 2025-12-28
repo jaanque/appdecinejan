@@ -92,8 +92,8 @@ class _GlowingBorderPainter extends CustomPainter {
     final rect = Offset.zero & size;
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 40 // Thick border for the glow
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 30); // Heavy blur
+      ..strokeWidth = 10 // Thinner, finer border
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10); // Cleaner, less diffuse blur
 
     // Apple Intelligence-like colors
     final colors = [
