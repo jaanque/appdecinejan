@@ -451,7 +451,8 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
       String? posterPath;
       if (movieName != 'No identificada' && !movieName.contains('No valid response')) {
         // 3. Fetch Full Details from TMDB using Service
-        final movieDetails = await _tmdbService.searchMovie(movieName);
+        // Use getMovieDetails to ensure we get genres and extended info
+        final movieDetails = await _tmdbService.getMovieDetails(movieName);
 
         if (movieDetails != null) {
           posterPath = movieDetails.posterUrl;
