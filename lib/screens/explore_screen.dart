@@ -16,9 +16,10 @@ class ExploreScreen extends StatefulWidget {
 }
 
 class _ExploreScreenState extends State<ExploreScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   // Usamos late para asegurar que se inicialicen en initState
   late AnimationController _controller;
+  late AnimationController _iconShakeController;
   ShakeDetector? _shakeDetector;
 
   final MovieService _movieService = MovieService();
@@ -40,6 +41,11 @@ class _ExploreScreenState extends State<ExploreScreen>
       vsync: this,
       duration: const Duration(seconds: 10),
     )..repeat();
+
+    _iconShakeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    )..repeat(reverse: false);
   }
 
   void _initShakeDetector() {
@@ -67,7 +73,7 @@ class _ExploreScreenState extends State<ExploreScreen>
 
     try {
       // 1. Obtener películas recientes
-      final movies = await _movieService.getMovies();
+      final movies = await _movieService.getLastSavedMovies(5);
 
       // 2. Obtener recomendación de IA
       final recommendedTitle = await _aiService.getRecommendation(movies);
@@ -83,11 +89,21 @@ class _ExploreScreenState extends State<ExploreScreen>
           });
         }
       } else {
-        if (mounted) setState(() => _isSearching = false);
+        if (mounted) {
+          setState(() => _isSearching = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Could not generate a recommendation at this time.")),
+          );
+        }
       }
     } catch (e) {
       debugPrint("Error discovering movie: $e");
-      if (mounted) setState(() => _isSearching = false);
+      if (mounted) {
+        setState(() => _isSearching = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Error discovering movie. Please try again.")),
+        );
+      }
     }
   }
 
@@ -123,6 +139,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   @override
   void dispose() {
     _controller.dispose();
+    _iconShakeController.dispose();
     _shakeDetector?.stopListening();
     super.dispose();
   }
@@ -163,26 +180,83 @@ class _ExploreScreenState extends State<ExploreScreen>
   }
 
   Widget _buildShakePrompt() {
-    return Column(
-      key: const ValueKey('prompt'),
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (_isSearching)
-          const CircularProgressIndicator(color: Colors.black54)
-        else ...[
-          Icon(Icons.vibration_rounded, size: 64, color: Colors.grey.shade400),
-          const SizedBox(height: 24),
-          const Text(
-            "Shake to discover",
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.black54,
-              letterSpacing: -0.5,
+    return GestureDetector(
+      onTap: _isSearching ? null : _handleShake,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        key: const ValueKey('prompt'),
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (_isSearching) ...[
+            const CircularProgressIndicator(color: Colors.black54),
+            const SizedBox(height: 24),
+            const Text(
+              "Analyzing your taste...",
+              style: TextStyle(
+                fontSize: 18,
+                color: Colors.black54,
+                letterSpacing: -0.5,
+              ),
             ),
-          ),
+          ] else ...[
+            // Animated Shake Icon
+            AnimatedBuilder(
+              animation: _iconShakeController,
+              builder: (context, child) {
+                // Create a shake effect: only shake during the first 20% of the cycle
+                double offset = 0;
+                final t = _iconShakeController.value;
+                if (t < 0.2) {
+                  // Shake 3 times in the first 0.2 (400ms)
+                  offset = sin(t * 5 * 2 * pi) * 0.1;
+                }
+                return Transform.rotate(
+                  angle: offset,
+                  child: child,
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.all(30),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.2),
+                      blurRadius: 30,
+                      spreadRadius: 10,
+                    )
+                  ],
+                ),
+                child: Icon(
+                  Icons.phone_iphone_rounded,
+                  size: 64,
+                  color: Colors.grey.shade800,
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+            const Text(
+              "Shake to discover",
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+                letterSpacing: -1.0,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "or tap here",
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade500,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 

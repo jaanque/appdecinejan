@@ -35,6 +35,26 @@ class MovieService {
     }
   }
 
+  /// Fetches the last [limit] movies saved by the user, regardless of collection status.
+  Future<List<Movie>> getLastSavedMovies(int limit) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return [];
+
+      final response = await _supabase
+          .from('user_movies')
+          .select()
+          .eq('user_id', userId)
+          .order('created_at', ascending: false)
+          .limit(limit);
+
+      final data = response as List<dynamic>;
+      return data.map((json) => Movie.fromSupabase(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
   Future<void> saveMovie(Movie movie) async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) return;

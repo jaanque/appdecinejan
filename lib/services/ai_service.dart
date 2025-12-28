@@ -20,10 +20,12 @@ class AIService {
       final uri = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
 
       final recentMovies = userMovies.take(5).map((m) => "${m.title} (${m.genres?.join(', ') ?? ''})").join(", ");
+      final excludeList = userMovies.map((m) => m.title).join(", ");
 
       final prompt = '''
       Based on the following movies the user likes: $recentMovies.
       Recommend ONE single movie that they would likely enjoy.
+      Do NOT recommend any of these movies: $excludeList.
       Respond ONLY with the official English title of the recommended movie.
       Do not include any punctuation, quotes, or extra text.
       ''';
