@@ -35,11 +35,9 @@ class MovieService {
     }
   }
 
-  Future<void> saveMovie(String title, String posterUrl) async {
+  Future<void> saveMovie(Movie movie) async {
     final userId = _supabase.auth.currentUser?.id;
     if (userId == null) return;
-
-    final movie = Movie(title: title, posterUrl: posterUrl);
 
     await _supabase.from('user_movies').insert({
       ...movie.toSupabase(),

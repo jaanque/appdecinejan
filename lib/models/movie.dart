@@ -92,6 +92,8 @@ class Movie {
   Map<String, dynamic> toSupabase() => {
         'title': title,
         'poster_url': posterUrl,
+        'genres': genres,
+        'overview': overview,
       };
 
   factory Movie.fromSupabase(Map<String, dynamic> map) {
@@ -99,6 +101,8 @@ class Movie {
       id: map['id'] as int?,
       title: map['title'] as String,
       posterUrl: map['poster_url'] as String,
+      genres: (map['genres'] as List?)?.map((e) => e as String).toList(),
+      overview: map['overview'] as String?,
     );
   }
 

@@ -142,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (user != null) {
       try {
-        await _movieService.saveMovie(newMovie.title, newMovie.posterUrl);
+        await _movieService.saveMovie(newMovie);
         await _refreshData();
       } catch (e) {
         debugPrint('Error saving to Supabase: $e');
