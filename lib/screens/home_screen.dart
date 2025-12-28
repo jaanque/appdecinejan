@@ -56,7 +56,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _refreshData();
     // Listen to Auth State Changes to reload data if user logs in
     Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      _refreshData();
+       _refreshData();
     });
     // Listen to controller to update UI (suffix icon)
     _controller.addListener(() {
@@ -139,10 +139,8 @@ class _HomeScreenState extends State<HomeScreen> {
         await _refreshData();
       } catch (e) {
         debugPrint('Error saving to Supabase: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Error saving to cloud")),
-          );
+         if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Error saving to cloud")));
         }
       }
     } else {
@@ -154,9 +152,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
 
       final prefs = await SharedPreferences.getInstance();
-      final String historyJson = jsonEncode(
-        _searchHistory.map((m) => m.toJson()).toList(),
-      );
+      final String historyJson = jsonEncode(_searchHistory.map((m) => m.toJson()).toList());
       await prefs.setString('search_history', historyJson);
     }
   }
@@ -170,9 +166,9 @@ class _HomeScreenState extends State<HomeScreen> {
         await _refreshData();
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('Error deleting movie')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error deleting movie')),
+          );
         }
       }
     } else {
@@ -181,9 +177,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _applyFilter();
       });
       final prefs = await SharedPreferences.getInstance();
-      final String historyJson = jsonEncode(
-        _searchHistory.map((m) => m.toJson()).toList(),
-      );
+      final String historyJson = jsonEncode(_searchHistory.map((m) => m.toJson()).toList());
       await prefs.setString('search_history', historyJson);
     }
   }
@@ -205,10 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              "Delete",
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
+            child: const Text("Delete", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -276,10 +267,7 @@ class _HomeScreenState extends State<HomeScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(
-                Icons.movie_creation_outlined,
-                color: Colors.black,
-              ),
+              leading: const Icon(Icons.movie_creation_outlined, color: Colors.black),
               title: const Text('Add Movie from TikTok'),
               onTap: () {
                 Navigator.pop(context);
@@ -287,10 +275,7 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(
-                Icons.folder_open_rounded,
-                color: Colors.black,
-              ),
+              leading: const Icon(Icons.folder_open_rounded, color: Colors.black),
               title: const Text('Create Collection'),
               onTap: () {
                 Navigator.pop(context);
@@ -311,9 +296,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return AlertDialog(
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.transparent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           title: const Center(
             child: Text(
               "New Collection",
@@ -324,10 +307,7 @@ class _HomeScreenState extends State<HomeScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 4,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade100,
                   borderRadius: BorderRadius.circular(12),
@@ -407,12 +387,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final oembedResponse = await oembedRequest.close();
 
       if (oembedResponse.statusCode != 200) {
-        debugPrint(
-          'TikTok oEmbed failed with status: ${oembedResponse.statusCode}',
-        );
-        throw Exception(
-          'Error fetching TikTok metadata: ${oembedResponse.statusCode}',
-        );
+        debugPrint('TikTok oEmbed failed with status: ${oembedResponse.statusCode}');
+        throw Exception('Error fetching TikTok metadata: ${oembedResponse.statusCode}');
       }
 
       final jsonString = await oembedResponse.transform(utf8.decoder).join();
@@ -420,38 +396,30 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // 2. Consultation with AI via REST API
       // Endpoint: https://api.groq.com/openai/v1/chat/completions
-      final groqUri = Uri.parse(
-        'https://api.groq.com/openai/v1/chat/completions',
-      );
+      final groqUri = Uri.parse('https://api.groq.com/openai/v1/chat/completions');
 
-      final prompt =
-          '''
+      final prompt = '''
 Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal is to identify the movie or TV show based on the title, description, and context. Respond ONLY with the name of the movie or TV show. REMEMBER: RESPOND ONLY WITH THE OFFICIAL US TITLE AND NO OTHER TEXT. If you cannot identify it with certainty, respond 'No identificada'.
 ''';
 
       final requestBody = {
         'model': 'llama-3.3-70b-versatile',
         'messages': [
-          {'role': 'user', 'content': prompt},
-        ],
+          {
+            'role': 'user',
+            'content': prompt
+          }
+        ]
       };
 
       debugPrint('Sending prompt to Groq...');
       final groqRequest = await client.postUrl(groqUri);
-      groqRequest.headers.set(
-        HttpHeaders.contentTypeHeader,
-        'application/json',
-      );
-      groqRequest.headers.set(
-        HttpHeaders.authorizationHeader,
-        'Bearer $_apiKey',
-      );
+      groqRequest.headers.set(HttpHeaders.contentTypeHeader, 'application/json');
+      groqRequest.headers.set(HttpHeaders.authorizationHeader, 'Bearer $_apiKey');
       groqRequest.add(utf8.encode(jsonEncode(requestBody)));
 
       final groqResponse = await groqRequest.close();
-      final groqResponseBody = await groqResponse
-          .transform(utf8.decoder)
-          .join();
+      final groqResponseBody = await groqResponse.transform(utf8.decoder).join();
       debugPrint('Groq Response: $groqResponseBody');
 
       if (groqResponse.statusCode != 200) {
@@ -464,7 +432,8 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
       if (groqJson['choices'] != null &&
           (groqJson['choices'] as List).isNotEmpty) {
         final choice = groqJson['choices'][0];
-        if (choice['message'] != null && choice['message']['content'] != null) {
+        if (choice['message'] != null &&
+            choice['message']['content'] != null) {
           aiText = choice['message']['content'];
         }
       }
@@ -473,8 +442,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
       debugPrint('AI identified movie: $movieName');
 
       String? posterPath;
-      if (movieName != 'No identificada' &&
-          !movieName.contains('No valid response')) {
+      if (movieName != 'No identificada' && !movieName.contains('No valid response')) {
         // 3. Fetch Full Details from TMDB using Service
         final movieDetails = await _tmdbService.searchMovie(movieName);
 
@@ -489,6 +457,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
         _posterUrl = posterPath;
         _controller.clear(); // Clear input on success
       });
+
     } catch (e) {
       debugPrint('Error caught: $e');
       setState(() {
@@ -532,10 +501,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                         hintText: 'Paste TikTok link...',
                         hintStyle: TextStyle(color: Colors.grey[400]),
                         border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 0,
-                          vertical: 14,
-                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 14),
                       ),
                       onSubmitted: (_) {
                         Navigator.of(context).pop();
@@ -548,10 +514,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                       Navigator.of(context).pop();
                       _processUrl();
                     },
-                    icon: const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Colors.black,
-                    ),
+                    icon: const Icon(Icons.arrow_forward_rounded, color: Colors.black),
                   ),
                 ],
               ),
@@ -589,7 +552,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
         children: [
           // Main Content
           if (_isLoading)
-            const CircularProgressIndicator()
+            const Center(child: CircularProgressIndicator(color: Colors.black))
           else
             CustomScrollView(
               slivers: [
@@ -613,33 +576,21 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                   title: _isSelectionMode
                       ? Text(
                           "${_selectedMovieIds.length + _selectedCollectionIds.length} Selected",
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                         )
                       : _buildSearchRow(),
                   actions: [
                     if (_isSelectionMode)
                       IconButton(
-                        icon: const Icon(
-                          Icons.delete_outline,
-                          color: Colors.red,
-                        ),
-                        onPressed:
-                            (_selectedMovieIds.isNotEmpty ||
-                                _selectedCollectionIds.isNotEmpty)
+                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        onPressed: (_selectedMovieIds.isNotEmpty || _selectedCollectionIds.isNotEmpty)
                             ? _deleteSelectedItems
                             : null,
                       )
                     else ...[
                       // New Action Button (+)
                       IconButton(
-                        icon: const Icon(
-                          Icons.add_circle_outline_rounded,
-                          color: Colors.black,
-                          size: 28,
-                        ),
+                        icon: const Icon(Icons.add_circle_outline_rounded, color: Colors.black, size: 28),
                         tooltip: 'Add New',
                         onPressed: () => _showAddOptions(context),
                       ),
@@ -667,12 +618,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                 // 2. Filter Chips (Scrollable body content)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      20,
-                      24,
-                      20,
-                      32,
-                    ), // Increased top spacing
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 32), // Increased top spacing
                     child: SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
@@ -691,74 +637,68 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                 // 3. Content (Unified Grid)
                 if (_isFetchingData)
                   const SliverFillRemaining(
-                    child: Center(
-                      child: CircularProgressIndicator(color: Colors.black),
-                    ),
+                    child: Center(child: CircularProgressIndicator(color: Colors.black)),
                   )
                 else if (_gridItems.isNotEmpty) ...[
                   SliverPadding(
-                    key: ValueKey(
-                      _currentFilter,
-                    ), // Forces rebuild and animation on filter change
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 8,
-                    ),
+                    key: ValueKey(_currentFilter), // Forces rebuild and animation on filter change
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     sliver: SliverGrid(
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2,
-                            childAspectRatio: 0.55,
-                            crossAxisSpacing: 20,
-                            mainAxisSpacing: 24,
-                          ),
-                      delegate: SliverChildBuilderDelegate((context, index) {
-                        final item = _gridItems[index];
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.55,
+                        crossAxisSpacing: 20,
+                        mainAxisSpacing: 24,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final item = _gridItems[index];
 
-                        Widget child = const SizedBox.shrink();
+                          Widget child = const SizedBox.shrink();
 
-                        if (item is Collection) {
-                          child = CollectionCard(
-                            collection: item,
-                            isSelectionMode: _isSelectionMode,
-                            isSelected:
-                                item.id != null &&
-                                _selectedCollectionIds.contains(item.id),
-                            onSelectionToggle: () {
-                              if (item.id != null) {
-                                _toggleCollectionSelection(item.id!);
-                              }
-                            },
-                            onUpdate: _refreshData,
+                          if (item is Collection) {
+                            child = CollectionCard(
+                              collection: item,
+                              isSelectionMode: _isSelectionMode,
+                              isSelected: item.id != null && _selectedCollectionIds.contains(item.id),
+                              onSelectionToggle: () {
+                                if (item.id != null) {
+                                  _toggleCollectionSelection(item.id!);
+                                }
+                              },
+                              onUpdate: _refreshData,
+                            );
+                          } else if (item is Movie) {
+                            child = MovieCard(
+                              movie: item,
+                              isSelectionMode: _isSelectionMode,
+                              isSelected: item.id != null && _selectedMovieIds.contains(item.id),
+                              onSelectionToggle: () {
+                                if (item.id != null) {
+                                  _toggleMovieSelection(item.id!);
+                                }
+                              },
+                              onDelete: () => _deleteMovie(item),
+                              onDragStarted: () {
+                                setState(() {
+                                  _isDragging = true;
+                                });
+                              },
+                              onDragEnd: () {
+                                setState(() {
+                                  _isDragging = false;
+                                });
+                              },
+                            );
+                          }
+
+                          return FadeInUp(
+                            delay: index * 50,
+                            child: child,
                           );
-                        } else if (item is Movie) {
-                          child = MovieCard(
-                            movie: item,
-                            isSelectionMode: _isSelectionMode,
-                            isSelected:
-                                item.id != null &&
-                                _selectedMovieIds.contains(item.id),
-                            onSelectionToggle: () {
-                              if (item.id != null) {
-                                _toggleMovieSelection(item.id!);
-                              }
-                            },
-                            onDelete: () => _deleteMovie(item),
-                            onDragStarted: () {
-                              setState(() {
-                                _isDragging = true;
-                              });
-                            },
-                            onDragEnd: () {
-                              setState(() {
-                                _isDragging = false;
-                              });
-                            },
-                          );
-                        }
-
-                        return FadeInUp(delay: index * 50, child: child);
-                      }, childCount: _gridItems.length),
+                        },
+                        childCount: _gridItems.length,
+                      ),
                     ),
                   ),
                 ] else
@@ -802,7 +742,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
 
           // Result Modal / Overlay
           if (_result.isNotEmpty && !_isLoading && _posterUrl != null)
-            Positioned.fill(
+             Positioned.fill(
               child: GestureDetector(
                 onTap: () {
                   setState(() {
@@ -816,10 +756,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          constraints: const BoxConstraints(
-                            maxHeight: 450,
-                            maxWidth: 300,
-                          ),
+                          constraints: const BoxConstraints(maxHeight: 450, maxWidth: 300),
                           clipBehavior: Clip.antiAlias,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
@@ -866,14 +803,9 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                         decoration: BoxDecoration(
-                          color: const Color(
-                            0xFF222222,
-                          ).withOpacity(0.9), // Softer black
+                          color: const Color(0xFF222222).withOpacity(0.9), // Softer black
                           borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
@@ -886,11 +818,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
                         child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.add_to_photos_rounded,
-                              color: Colors.white,
-                              size: 18,
-                            ),
+                            Icon(Icons.add_to_photos_rounded, color: Colors.white, size: 18),
                             SizedBox(width: 12),
                             Text(
                               "Drop into a collection",
@@ -923,9 +851,7 @@ Analyze the following JSON metadata from a TikTok video: $jsonString. Your goal 
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected
-              ? Colors.grey.shade200
-              : Colors.transparent, // Very subtle
+          color: isSelected ? Colors.grey.shade200 : Colors.transparent, // Very subtle
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
