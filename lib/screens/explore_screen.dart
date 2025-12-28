@@ -15,9 +15,12 @@ class ExploreScreen extends StatefulWidget {
   State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
-class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProviderStateMixin {
-  AnimationController? _controller;
+class _ExploreScreenState extends State<ExploreScreen>
+    with SingleTickerProviderStateMixin {
+  // Usamos late para asegurar que se inicialicen en initState
+  late AnimationController _controller;
   ShakeDetector? _shakeDetector;
+
   final MovieService _movieService = MovieService();
   final AIService _aiService = AIService();
   final TMDBService _tmdbService = TMDBService();
@@ -41,7 +44,10 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
 
   void _initShakeDetector() {
     _shakeDetector = ShakeDetector.autoStart(
-      onPhoneShake: _handleShake,
+      // CORRECCIÓN: Se agrega el parámetro (event)
+      onPhoneShake: (ShakeEvent event) {
+        _handleShake();
+      },
       minimumShakeCount: 1,
       shakeSlopTimeMS: 500,
       shakeCountResetTime: 3000,
@@ -49,22 +55,25 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
     );
   }
 
+  // Mantenemos la lógica pero la llamamos desde el detector corregido
   Future<void> _handleShake() async {
     if (_isSearching || _recommendedMovie != null) return;
 
-    setState(() {
-      _isSearching = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isSearching = true;
+      });
+    }
 
     try {
-      // 1. Get recent movies
+      // 1. Obtener películas recientes
       final movies = await _movieService.getMovies();
 
-      // 2. Get AI recommendation
+      // 2. Obtener recomendación de IA
       final recommendedTitle = await _aiService.getRecommendation(movies);
 
       if (recommendedTitle != null) {
-        // 3. Get Details
+        // 3. Obtener detalles de TMDB
         final movie = await _tmdbService.getMovieDetails(recommendedTitle);
 
         if (mounted) {
@@ -96,39 +105,43 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
       await _movieService.saveMovie(_recommendedMovie!);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("${_recommendedMovie!.title} added to Home")),
+          SnackBar(
+            content: Text("${_recommendedMovie!.title} added to Home"),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error adding movie")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Error adding movie")));
+      }
     }
   }
 
   @override
   void dispose() {
-    _controller?.dispose();
+    _controller.dispose();
     _shakeDetector?.stopListening();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_controller == null) _initController();
-
+    // Eliminamos la inicialización que estaba aquí para evitar errores
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // Discrete Dynamic Glow
+          // Apple Intelligence Style Glow
           Positioned.fill(
             child: AnimatedBuilder(
-              animation: _controller!,
+              animation: _controller,
               builder: (context, child) {
                 return CustomPaint(
                   painter: _DiscreteGlowPainter(
-                    animationValue: _controller!.value,
+                    animationValue: _controller.value,
                   ),
                 );
               },
@@ -137,9 +150,12 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
 
           // Content
           Center(
-            child: _recommendedMovie != null
-                ? _buildRecommendationCard()
-                : _buildShakePrompt(),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 500),
+              child: _recommendedMovie != null
+                  ? _buildRecommendationCard()
+                  : _buildShakePrompt(),
+            ),
           ),
         ],
       ),
@@ -148,16 +164,13 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
 
   Widget _buildShakePrompt() {
     return Column(
+      key: const ValueKey('prompt'),
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (_isSearching)
           const CircularProgressIndicator(color: Colors.black54)
         else ...[
-          Icon(
-            Icons.vibration_rounded,
-            size: 64,
-            color: Colors.grey.shade400,
-          ),
+          Icon(Icons.vibration_rounded, size: 64, color: Colors.grey.shade400),
           const SizedBox(height: 24),
           const Text(
             "Shake to discover",
@@ -168,13 +181,14 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
               letterSpacing: -0.5,
             ),
           ),
-        ]
+        ],
       ],
     );
   }
 
   Widget _buildRecommendationCard() {
     return Column(
+      key: const ValueKey('card'),
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         GestureDetector(
@@ -184,13 +198,13 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
               MaterialPageRoute(
                 builder: (_) => MovieDetailScreen(
                   movie: _recommendedMovie!,
-                  showSaveButton: true, // Enable saving for discovery
-                )
-              )
+                  showSaveButton: true,
+                ),
+              ),
             );
           },
           child: Hero(
-            tag: _recommendedMovie!.title, // Simple tag
+            tag: _recommendedMovie!.title,
             child: Container(
               width: 250,
               height: 375,
@@ -212,14 +226,17 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
           ),
         ),
         const SizedBox(height: 32),
-        Text(
-          _recommendedMovie!.title,
-          style: const TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.black87,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: Text(
+            _recommendedMovie!.title,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+            textAlign: TextAlign.center,
           ),
-          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 24),
         Row(
@@ -232,7 +249,13 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -240,9 +263,12 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
               onPressed: _resetDiscovery,
               icon: const Icon(Icons.refresh),
               tooltip: "Try again",
+              style: IconButton.styleFrom(
+                backgroundColor: Colors.grey.shade100,
+              ),
             ),
           ],
-        )
+        ),
       ],
     );
   }
@@ -257,17 +283,15 @@ class _DiscreteGlowPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
 
-    // Apple Intelligence Colors - Pastel & Soft
     final colors = [
-      const Color(0xFF40C8E0).withOpacity(0.3), // Cyan
-      const Color(0xFF6439FF).withOpacity(0.3), // Deep Blue/Purple
-      const Color(0xFFA839FF).withOpacity(0.3), // Purple
-      const Color(0xFFFF39A0).withOpacity(0.3), // Pink
-      const Color(0xFFFF8539).withOpacity(0.3), // Orange
-      const Color(0xFF40C8E0).withOpacity(0.3), // Cyan loop
+      const Color(0xFF40C8E0).withOpacity(0.3),
+      const Color(0xFF6439FF).withOpacity(0.3),
+      const Color(0xFFA839FF).withOpacity(0.3),
+      const Color(0xFFFF39A0).withOpacity(0.3),
+      const Color(0xFFFF8539).withOpacity(0.3),
+      const Color(0xFF40C8E0).withOpacity(0.3),
     ];
 
-    // Rotating Gradient
     final gradient = SweepGradient(
       center: Alignment.center,
       colors: colors,
@@ -275,19 +299,14 @@ class _DiscreteGlowPainter extends CustomPainter {
       transform: GradientRotation(animationValue * 2 * pi),
     );
 
-    // Subtle Breathing (very minimal)
-    final breathe = sin(animationValue * 2 * pi) * 0.5 + 0.5; // 0 to 1
+    final breathe = sin(animationValue * 2 * pi) * 0.5 + 0.5;
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 30 + (breathe * 10) // 30-40px wide stroke
-      ..strokeJoin = StrokeJoin.round
-      ..strokeCap = StrokeCap.round
+      ..strokeWidth = 35 + (breathe * 10)
       ..shader = gradient.createShader(rect)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 40); // High blur for softness
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 50);
 
-    // Draw strictly along the edge (centered on the boundary)
-    // This allows the blur to bleed inward softly while the main stroke is half-offscreen
     canvas.drawRect(rect, paint);
   }
 
