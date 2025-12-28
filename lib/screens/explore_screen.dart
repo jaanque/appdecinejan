@@ -89,37 +89,60 @@ class _GlowingBorderPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // Define the shape (Rounded Rectangle for a modern look)
     final rect = Offset.zero & size;
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 10 // Thinner, finer border
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10); // Cleaner, less diffuse blur
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(32));
 
-    // Apple Intelligence-like colors
+    // Apple Intelligence Colors (Vibrant & Smooth)
     final colors = [
-      Colors.cyanAccent,
-      Colors.blue,
-      Colors.purple,
-      Colors.pink,
-      Colors.orangeAccent,
-      Colors.cyanAccent, // Wrap around
+      const Color(0xFF00C7BE), // Cyan
+      const Color(0xFF007AFF), // Blue
+      const Color(0xFFAF52DE), // Purple
+      const Color(0xFFFF2D55), // Pink
+      const Color(0xFFFF9500), // Orange
+      const Color(0xFF00C7BE), // Loop back to Cyan
     ];
 
-    // Create a rotating sweep gradient
+    // Rotating Gradient
     final gradient = SweepGradient(
       colors: colors,
       stops: const [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
       transform: GradientRotation(animationValue * 2 * pi),
     );
 
-    paint.shader = gradient.createShader(rect);
+    // Breathing effect (pulsing opacity/width)
+    final breathe = sin(animationValue * 4 * pi) * 0.5 + 0.5; // 0.0 to 1.0
 
-    // Draw the rectangle path
-    // We inset slightly so the blur doesn't get clipped too much at the very edge,
-    // although stroke stays centered on the path.
-    // If strokeWidth is 40, we might want to draw closely to the edge.
-    // Let's draw exactly on the edge.
-    canvas.drawRect(rect, paint);
+    // --- Layer 1: Ambient Haze (Wide, soft, background) ---
+    final paintHaze = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 30
+      ..shader = gradient.createShader(rect)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 20);
+    // Reduce opacity for haze
+    canvas.saveLayer(rect, Paint()..color = Colors.white.withOpacity(0.3));
+    canvas.drawRRect(rrect, paintHaze);
+    canvas.restore();
+
+    // --- Layer 2: Primary Glow (Body) ---
+    final paintGlow = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 8 + (breathe * 4) // Pulse width slightly (8-12px)
+      ..shader = gradient.createShader(rect)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+    canvas.saveLayer(rect, Paint()..color = Colors.white.withOpacity(0.6));
+    canvas.drawRRect(rrect, paintGlow);
+    canvas.restore();
+
+    // --- Layer 3: Core (Sharp definition) ---
+    final paintCore = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2
+      ..shader = gradient.createShader(rect)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1); // Very slight blur for anti-aliasing
+
+    // Draw core with full opacity
+    canvas.drawRRect(rrect, paintCore);
   }
 
   @override
