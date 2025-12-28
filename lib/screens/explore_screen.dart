@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import '../models/movie.dart';
 import '../services/tmdb_service.dart';
 import '../widgets/movie_card.dart';
@@ -69,15 +70,64 @@ class _ExploreScreenState extends State<ExploreScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            floating: true,
-            pinned: false,
-            backgroundColor: Colors.white,
-            surfaceTintColor: Colors.transparent,
-            elevation: 0,
-            automaticallyImplyLeading: false,
+      body: Stack(
+        children: [
+          // Magical Aura Background
+          Positioned(
+            top: -100,
+            left: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.purple.withOpacity(0.3),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 100,
+            right: -50,
+            child: Container(
+              width: 250,
+              height: 250,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.blue.withOpacity(0.3),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -50,
+            left: 50,
+            child: Container(
+              width: 350,
+              height: 350,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.pink.withOpacity(0.2),
+              ),
+            ),
+          ),
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 80, sigmaY: 80),
+              child: Container(
+                color: Colors.white.withOpacity(0.4), // Soft white overlay
+              ),
+            ),
+          ),
+
+          // Content
+          CustomScrollView(
+            slivers: [
+              SliverAppBar(
+                floating: true,
+                pinned: false,
+                backgroundColor: Colors.transparent, // Transparent to show aura
+                surfaceTintColor: Colors.transparent,
+                elevation: 0,
+                automaticallyImplyLeading: false,
             titleSpacing: 16,
             title: Container(
               decoration: BoxDecoration(
@@ -160,8 +210,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ),
             ),
 
-            // Bottom padding
-            const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                // Bottom padding
+                const SliverToBoxAdapter(child: SizedBox(height: 24)),
+            ],
+          ),
         ],
       ),
     );
