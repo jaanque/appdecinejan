@@ -57,10 +57,10 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
+  final ValueNotifier<int> _refreshNotifier = ValueNotifier(0);
 
   late final List<Widget> _screens = [
-    HomeScreen(key: _homeKey),
+    HomeScreen(refreshNotifier: _refreshNotifier),
     const ExploreScreen(),
     const ProfileScreen(),
   ];
@@ -71,8 +71,14 @@ class _MainScreenState extends State<MainScreen> {
     });
 
     if (index == 0) {
-      _homeKey.currentState?.refreshData();
+      _refreshNotifier.value++;
     }
+  }
+
+  @override
+  void dispose() {
+    _refreshNotifier.dispose();
+    super.dispose();
   }
 
   @override
