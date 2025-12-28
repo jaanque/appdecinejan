@@ -57,9 +57,10 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
+  final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
 
-  final List<Widget> _screens = [
-    const HomeScreen(),
+  late final List<Widget> _screens = [
+    HomeScreen(key: _homeKey),
     const ExploreScreen(),
     const ProfileScreen(),
   ];
@@ -68,6 +69,10 @@ class _MainScreenState extends State<MainScreen> {
     setState(() {
       _selectedIndex = index;
     });
+
+    if (index == 0) {
+      _homeKey.currentState?.refreshData();
+    }
   }
 
   @override
