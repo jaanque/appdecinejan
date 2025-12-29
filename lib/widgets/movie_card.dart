@@ -136,7 +136,9 @@ class _MovieCardState extends State<MovieCard> {
       data: widget.movie,
       onDragStarted: widget.onDragStarted,
       onDragEnd: (details) {
-        if (widget.onDragEnd != null) widget.onDragEnd!();
+        if (widget.onDragEnd != null) {
+          widget.onDragEnd!();
+        }
         // Only animate back if the drop was NOT accepted by a target (e.g. collection)
         if (!details.wasAccepted && mounted) {
           setState(() {

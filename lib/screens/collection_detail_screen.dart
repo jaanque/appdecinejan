@@ -43,7 +43,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   Future<void> _deleteCollection() async {
     if (widget.collection.id == null) return;
 
-    final confirmed = await showDialog<bool>(
+    final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Collection?'),
@@ -224,7 +224,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
 
     final TextEditingController controller = TextEditingController(text: _currentName);
 
-    final newName = await showDialog<String>(
+    final String? newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Rename Collection'),
@@ -269,7 +269,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   Future<void> _removeMovie(Movie movie) async {
     if (widget.collection.id == null || movie.id == null) return;
 
-    final confirmed = await showModalBottomSheet<bool>(
+    final bool? confirmed = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
@@ -358,20 +358,22 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                 icon: const Icon(Icons.more_horiz_rounded, color: Colors.black),
                 color: Colors.white,
                 surfaceTintColor: Colors.transparent,
-                onSelected: (value) {
-                  if (value == 'rename') _renameCollection();
-                  if (value == 'delete') _deleteCollection();
-                  if (value == 'leave') {
+                onSelected: (String value) {
+                  if (value == 'rename') {
+                    _renameCollection();
+                  } else if (value == 'delete') {
+                    _deleteCollection();
+                  } else if (value == 'leave') {
                     // Handle leaving shared collection
                      _collectionService.leaveCollection(widget.collection.id!).then((_) {
                        if (mounted) Navigator.pop(context, true);
                      });
                   }
                 },
-                itemBuilder: (context) {
+                itemBuilder: (BuildContext context) {
                   if (widget.collection.isShared) {
-                    return [
-                      const PopupMenuItem(
+                    return <PopupMenuEntry<String>>[
+                      const PopupMenuItem<String>(
                         value: 'leave',
                         child: Row(
                           children: [
@@ -383,8 +385,8 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                       ),
                     ];
                   }
-                  return [
-                    const PopupMenuItem(
+                  return <PopupMenuEntry<String>>[
+                    const PopupMenuItem<String>(
                       value: 'rename',
                       child: Row(
                         children: [
@@ -394,7 +396,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                         ],
                       ),
                     ),
-                    const PopupMenuItem(
+                    const PopupMenuItem<String>(
                       value: 'delete',
                       child: Row(
                         children: [
@@ -509,11 +511,15 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                   (context, index) {
                     final movie = _movies[index];
                     return GestureDetector(
-                      onLongPress: () => _removeMovie(movie),
+                      onLongPress: () {
+                         _removeMovie(movie);
+                      },
                       child: Stack(
                         children: [
                           MovieCard(
                             movie: movie,
+                            // Ensure internal tap/drag doesn't conflict if not needed here
+                            // But we need MovieCard visual
                           ),
                         ],
                       ),
