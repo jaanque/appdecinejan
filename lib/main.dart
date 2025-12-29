@@ -110,23 +110,23 @@ class _MainScreenState extends State<MainScreen> {
           onDestinationSelected: _onItemTapped,
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.transparent,
-          indicatorColor: Colors.transparent, // Minimalist: No heavy indicator blob, just icon color change
+          indicatorColor: Colors.grey.shade200,
           elevation: 0,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
           destinations: [
             NavigationDestination(
               icon: Icon(Icons.home_outlined, color: Colors.grey.shade600),
-              selectedIcon: const Icon(Icons.home_filled, color: Colors.black),
+              selectedIcon: const Icon(Icons.home_rounded, color: Colors.black),
               label: 'Home',
             ),
             NavigationDestination(
               icon: Icon(Icons.explore_outlined, color: Colors.grey.shade600),
-              selectedIcon: const Icon(Icons.explore, color: Colors.black),
+              selectedIcon: const Icon(Icons.explore_rounded, color: Colors.black),
               label: 'Explore',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline, color: Colors.grey.shade600),
-              selectedIcon: const Icon(Icons.person, color: Colors.black),
+              selectedIcon: const Icon(Icons.person_rounded, color: Colors.black),
               label: 'Profile',
             ),
           ],
