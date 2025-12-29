@@ -75,4 +75,22 @@ class MovieService {
         .eq('id', id)
         .eq('user_id', userId);
   }
+
+  /// Fetches all movies saved by the user to analyze profile statistics.
+  Future<List<Movie>> getAllMovies() async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) return [];
+
+      final response = await _supabase
+          .from('user_movies')
+          .select()
+          .eq('user_id', userId);
+
+      final data = response as List<dynamic>;
+      return data.map((json) => Movie.fromSupabase(json)).toList();
+    } catch (e) {
+      return [];
+    }
+  }
 }

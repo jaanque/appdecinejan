@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
+import '../services/movie_service.dart';
+import '../widgets/user_taste_profile.dart';
+import '../models/movie.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,6 +14,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final AuthService _authService = AuthService();
+  final MovieService _movieService = MovieService();
   bool _isLogin = true; // Toggle between Login and Sign Up
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -215,7 +219,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -244,24 +248,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-              // Placeholder for future features
-              ListTile(
-                leading: const Icon(Icons.favorite_border),
-                title: const Text('Favorites'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Coming Soon")));
+
+              // User Taste Profile
+              FutureBuilder<List<Movie>>(
+                future: _movieService.getAllMovies(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child: CircularProgressIndicator(color: Colors.black),
+                    );
+                  }
+                  if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  return UserTasteProfile(movies: snapshot.data!);
                 },
               ),
-              ListTile(
-                leading: const Icon(Icons.settings_outlined),
-                title: const Text('Settings'),
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () {
-                   ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Coming Soon")));
-                },
-              ),
-              const Spacer(),
+
+              const SizedBox(height: 40),
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
