@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../services/movie_service.dart';
 import '../widgets/user_taste_profile.dart';
 import '../models/movie.dart';
+import 'achievements_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -331,6 +332,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       icon: Icons.favorite_rounded,
                       title: 'Favorites',
                       onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Coming Soon"))),
+                    ),
+                    Divider(height: 1, color: Colors.grey.shade100),
+                    _buildMenuOption(
+                      icon: Icons.emoji_events_rounded,
+                      title: 'Achievements',
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+                      ),
                     ),
                     Divider(height: 1, color: Colors.grey.shade100),
                     _buildMenuOption(
