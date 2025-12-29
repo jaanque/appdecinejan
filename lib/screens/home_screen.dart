@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/movie.dart';
@@ -51,6 +53,9 @@ class _HomeScreenState extends State<HomeScreen> {
   // TMDB Access Token
   final String _tmdbAccessToken = dotenv.env['TMDB_ACCESS_TOKEN'] ?? '';
 
+  // Share Intent Subscription
+  late StreamSubscription _intentDataStreamSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -64,12 +69,58 @@ class _HomeScreenState extends State<HomeScreen> {
     _controller.addListener(() {
       setState(() {});
     });
+
+    // Setup Share Intent Listener
+    _initShareListener();
+  }
+
+  void _initShareListener() {
+    // For sharing or opening urls/text coming from outside the app while the app is in the memory
+    _intentDataStreamSubscription = ReceiveSharingIntent.instance.getMediaStream().listen((List<SharedMediaFile> value) {
+      if (value.isNotEmpty && value.first.path.isNotEmpty) {
+        if (!mounted) return;
+        _handleSharedText(value.first.path);
+      }
+    }, onError: (err) {
+      debugPrint("getMediaStream error: $err");
+    });
+
+    // For sharing or opening urls/text coming from outside the app while the app is closed
+    ReceiveSharingIntent.instance.getInitialMedia().then((List<SharedMediaFile> value) {
+      if (!mounted) return;
+      if (value.isNotEmpty && value.first.path.isNotEmpty) {
+        _handleSharedText(value.first.path);
+      }
+    });
+  }
+
+  void _handleSharedText(String text) {
+    debugPrint("Shared text received: $text");
+    if (!mounted) return;
+
+    // Depending on the platform and sharing source, the text might be a raw URL or contain extra text.
+    // For a robust implementation, we might want to extract the first http/https link.
+    // But for now, we assume the user shared a link or TikTok shared the link directly.
+    // If text contains spaces/newlines, we might want to clean it.
+
+    // Simple regex to find a URL if there is other text
+    final RegExp urlRegExp = RegExp(r'(https?://\S+)');
+    final match = urlRegExp.firstMatch(text);
+    final String urlToProcess = match?.group(0) ?? text;
+
+    setState(() {
+      _controller.text = urlToProcess;
+    });
+
+    // Automatically start processing
+    _processUrl();
   }
 
   @override
   void dispose() {
     widget.refreshNotifier?.removeListener(_handleRefresh);
     _controller.dispose();
+    _intentDataStreamSubscription.cancel();
     super.dispose();
   }
 
