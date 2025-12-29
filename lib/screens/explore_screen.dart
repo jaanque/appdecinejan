@@ -418,19 +418,21 @@ class _DiscreteGlowPainter extends CustomPainter {
     List<Color> colors;
 
     if (customColors != null && customColors!.isNotEmpty) {
-      colors = customColors!.map((c) => c.withOpacity(0.3)).toList();
+      // Increased opacity for more visibility
+      colors = customColors!.map((c) => c.withOpacity(0.6)).toList();
       // Ensure we have enough colors for the gradient logic below, or duplicate if too few
       if (colors.length < 2) {
         colors = List.filled(6, colors.first);
       }
     } else {
+      // Increased opacity for more visibility
       colors = [
-        const Color(0xFF40C8E0).withOpacity(0.3),
-        const Color(0xFF6439FF).withOpacity(0.3),
-        const Color(0xFFA839FF).withOpacity(0.3),
-        const Color(0xFFFF39A0).withOpacity(0.3),
-        const Color(0xFFFF8539).withOpacity(0.3),
-        const Color(0xFF40C8E0).withOpacity(0.3),
+        const Color(0xFF40C8E0).withOpacity(0.6),
+        const Color(0xFF6439FF).withOpacity(0.6),
+        const Color(0xFFA839FF).withOpacity(0.6),
+        const Color(0xFFFF39A0).withOpacity(0.6),
+        const Color(0xFFFF8539).withOpacity(0.6),
+        const Color(0xFF40C8E0).withOpacity(0.6),
       ];
     }
 
@@ -446,9 +448,9 @@ class _DiscreteGlowPainter extends CustomPainter {
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 35 + (breathe * 10)
+      ..strokeWidth = 60 + (breathe * 30) // Significantly thicker stroke
       ..shader = gradient.createShader(rect)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 50);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 80); // Softer, wider blur
 
     canvas.drawRect(rect, paint);
   }
