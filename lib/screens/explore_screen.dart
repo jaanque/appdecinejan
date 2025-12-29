@@ -416,23 +416,27 @@ class _DiscreteGlowPainter extends CustomPainter {
     final rect = Offset.zero & size;
 
     List<Color> colors;
+    final bool isActive = customColors != null && customColors!.isNotEmpty;
 
-    if (customColors != null && customColors!.isNotEmpty) {
-      // Discrete/Subtle opacity for full screen effect
-      colors = customColors!.map((c) => c.withOpacity(0.2)).toList();
-      // Ensure we have enough colors for the gradient logic below, or duplicate if too few
+    // Adjust intensity based on state
+    final double opacity = isActive ? 0.5 : 0.1;
+    final double blurSigma = isActive ? 60.0 : 120.0;
+
+    if (isActive) {
+      // Active state: Movie colors, more noticeable
+      colors = customColors!.map((c) => c.withOpacity(opacity)).toList();
       if (colors.length < 2) {
         colors = List.filled(6, colors.first);
       }
     } else {
-      // Discrete/Subtle opacity for full screen effect
+      // Idle state: Default colors, very discrete
       colors = [
-        const Color(0xFF40C8E0).withOpacity(0.2),
-        const Color(0xFF6439FF).withOpacity(0.2),
-        const Color(0xFFA839FF).withOpacity(0.2),
-        const Color(0xFFFF39A0).withOpacity(0.2),
-        const Color(0xFFFF8539).withOpacity(0.2),
-        const Color(0xFF40C8E0).withOpacity(0.2),
+        const Color(0xFF40C8E0).withOpacity(opacity),
+        const Color(0xFF6439FF).withOpacity(opacity),
+        const Color(0xFFA839FF).withOpacity(opacity),
+        const Color(0xFFFF39A0).withOpacity(opacity),
+        const Color(0xFFFF8539).withOpacity(opacity),
+        const Color(0xFF40C8E0).withOpacity(opacity),
       ];
     }
 
@@ -451,7 +455,7 @@ class _DiscreteGlowPainter extends CustomPainter {
       // Occupy the whole screen: Use a massive stroke width
       ..strokeWidth = (size.longestSide * 1.2) + (breathe * 50)
       ..shader = gradient.createShader(rect)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 120); // Very soft blur
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, blurSigma);
 
     canvas.drawRect(rect, paint);
   }
