@@ -418,21 +418,21 @@ class _DiscreteGlowPainter extends CustomPainter {
     List<Color> colors;
 
     if (customColors != null && customColors!.isNotEmpty) {
-      // Increased opacity for more visibility
-      colors = customColors!.map((c) => c.withOpacity(0.6)).toList();
+      // Discrete/Subtle opacity for full screen effect
+      colors = customColors!.map((c) => c.withOpacity(0.2)).toList();
       // Ensure we have enough colors for the gradient logic below, or duplicate if too few
       if (colors.length < 2) {
         colors = List.filled(6, colors.first);
       }
     } else {
-      // Increased opacity for more visibility
+      // Discrete/Subtle opacity for full screen effect
       colors = [
-        const Color(0xFF40C8E0).withOpacity(0.6),
-        const Color(0xFF6439FF).withOpacity(0.6),
-        const Color(0xFFA839FF).withOpacity(0.6),
-        const Color(0xFFFF39A0).withOpacity(0.6),
-        const Color(0xFFFF8539).withOpacity(0.6),
-        const Color(0xFF40C8E0).withOpacity(0.6),
+        const Color(0xFF40C8E0).withOpacity(0.2),
+        const Color(0xFF6439FF).withOpacity(0.2),
+        const Color(0xFFA839FF).withOpacity(0.2),
+        const Color(0xFFFF39A0).withOpacity(0.2),
+        const Color(0xFFFF8539).withOpacity(0.2),
+        const Color(0xFF40C8E0).withOpacity(0.2),
       ];
     }
 
@@ -448,9 +448,10 @@ class _DiscreteGlowPainter extends CustomPainter {
 
     final paint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 60 + (breathe * 30) // Significantly thicker stroke
+      // Occupy the whole screen: Use a massive stroke width
+      ..strokeWidth = (size.longestSide * 1.2) + (breathe * 50)
       ..shader = gradient.createShader(rect)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 80); // Softer, wider blur
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 120); // Very soft blur
 
     canvas.drawRect(rect, paint);
   }
