@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'dart:math';
 import 'package:shake/shake.dart';
+import 'package:palette_generator/palette_generator.dart';
 import '../models/movie.dart';
 import '../services/movie_service.dart';
 import '../services/ai_service.dart';
@@ -28,6 +29,7 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   bool _isSearching = false;
   Movie? _recommendedMovie;
+  List<Color>? _glowColors;
 
   @override
   void initState() {
@@ -92,10 +94,13 @@ class _ExploreScreenState extends State<ExploreScreen>
       if (recommendedTitle != null) {
         // 3. Obtener detalles de TMDB
         final movie = await _tmdbService.getMovieDetails(recommendedTitle);
+        // 4. Generate dynamic aura
+        final palette = await _generatePalette(movie);
 
         if (mounted) {
           setState(() {
             _recommendedMovie = movie;
+            _glowColors = palette;
             _isSearching = false;
           });
         }
@@ -118,9 +123,42 @@ class _ExploreScreenState extends State<ExploreScreen>
     }
   }
 
+  Future<List<Color>?> _generatePalette(Movie movie) async {
+    try {
+      final PaletteGenerator generator = await PaletteGenerator.fromImageProvider(
+        NetworkImage(movie.posterUrl),
+        size: const Size(100, 150),
+        maximumColorCount: 20,
+      );
+
+      final candidates = [
+        generator.vibrantColor?.color,
+        generator.lightVibrantColor?.color,
+        generator.darkVibrantColor?.color,
+        generator.mutedColor?.color,
+        generator.dominantColor?.color,
+      ].whereType<Color>().toList();
+
+      if (candidates.isNotEmpty) {
+        // Ensure we have a nice loop of 6 colors
+        List<Color> newColors = [];
+        for (int i = 0; i < 6; i++) {
+          newColors.add(candidates[i % candidates.length]);
+        }
+        // Force start and end match for smooth sweep gradient
+        newColors[5] = newColors[0];
+        return newColors;
+      }
+    } catch (e) {
+      debugPrint("Error generating palette: $e");
+    }
+    return null;
+  }
+
   void _resetDiscovery() {
     setState(() {
       _recommendedMovie = null;
+      _glowColors = null;
       _isSearching = false;
     });
   }
@@ -170,6 +208,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                 return CustomPaint(
                   painter: _DiscreteGlowPainter(
                     animationValue: _controller.value,
+                    customColors: _glowColors,
                   ),
                 );
               },
@@ -361,26 +400,41 @@ class _ExploreScreenState extends State<ExploreScreen>
 
 class _DiscreteGlowPainter extends CustomPainter {
   final double animationValue;
+  final List<Color>? customColors;
 
-  _DiscreteGlowPainter({required this.animationValue});
+  _DiscreteGlowPainter({
+    required this.animationValue,
+    this.customColors,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
 
-    final colors = [
-      const Color(0xFF40C8E0).withOpacity(0.3),
-      const Color(0xFF6439FF).withOpacity(0.3),
-      const Color(0xFFA839FF).withOpacity(0.3),
-      const Color(0xFFFF39A0).withOpacity(0.3),
-      const Color(0xFFFF8539).withOpacity(0.3),
-      const Color(0xFF40C8E0).withOpacity(0.3),
-    ];
+    List<Color> colors;
+
+    if (customColors != null && customColors!.isNotEmpty) {
+      colors = customColors!.map((c) => c.withOpacity(0.3)).toList();
+      // Ensure we have enough colors for the gradient logic below, or duplicate if too few
+      if (colors.length < 2) {
+        colors = List.filled(6, colors.first);
+      }
+    } else {
+      colors = [
+        const Color(0xFF40C8E0).withOpacity(0.3),
+        const Color(0xFF6439FF).withOpacity(0.3),
+        const Color(0xFFA839FF).withOpacity(0.3),
+        const Color(0xFFFF39A0).withOpacity(0.3),
+        const Color(0xFFFF8539).withOpacity(0.3),
+        const Color(0xFF40C8E0).withOpacity(0.3),
+      ];
+    }
 
     final gradient = SweepGradient(
       center: Alignment.center,
       colors: colors,
-      stops: const [0.0, 0.2, 0.4, 0.6, 0.8, 1.0],
+      // If custom colors count != 6, stops might need adjustment or be null for even distribution
+      stops: colors.length == 6 ? const [0.0, 0.2, 0.4, 0.6, 0.8, 1.0] : null,
       transform: GradientRotation(animationValue * 2 * pi),
     );
 
@@ -397,6 +451,7 @@ class _DiscreteGlowPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DiscreteGlowPainter oldDelegate) {
-    return oldDelegate.animationValue != animationValue;
+    return oldDelegate.animationValue != animationValue ||
+        oldDelegate.customColors != customColors;
   }
 }
