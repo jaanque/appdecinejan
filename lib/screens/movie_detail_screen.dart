@@ -348,11 +348,12 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                               icon: const Icon(Icons.bookmark_add_rounded),
                               label: const Text("Save Movie"),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.black, // Always black for consistency/modern look
-                                foregroundColor: Colors.white,
+                                backgroundColor: _vibrantColor,
+                                foregroundColor: _vibrantColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
                                 padding: const EdgeInsets.symmetric(vertical: 18),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                elevation: 0,
+                                elevation: 8,
+                                shadowColor: _vibrantColor.withOpacity(0.4),
                               ),
                             ),
                           ),
@@ -605,11 +606,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                         runSpacing: 8,
                         children: _movie.genres!.map((g) => Chip(
                           label: Text(g),
-                          backgroundColor: Colors.transparent,
-                          shape: StadiumBorder(side: BorderSide(color: secondaryTextColor.withOpacity(0.2))),
+                          backgroundColor: _chipColor,
+                          shape: const StadiumBorder(side: BorderSide.none),
                           labelStyle: TextStyle(
-                            color: secondaryTextColor,
-                            fontWeight: FontWeight.w500,
+                            color: _chipTextColor,
+                            fontWeight: FontWeight.bold,
                             fontSize: 12
                           ),
                           padding: const EdgeInsets.all(0),
