@@ -94,8 +94,12 @@ class _ExploreScreenState extends State<ExploreScreen>
       if (recommendedTitle != null) {
         // 3. Obtener detalles de TMDB
         final movie = await _tmdbService.getMovieDetails(recommendedTitle);
+
         // 4. Generate dynamic aura
-        final palette = await _generatePalette(movie);
+        List<Color>? palette;
+        if (movie != null) {
+          palette = await _generatePalette(movie);
+        }
 
         if (mounted) {
           setState(() {
