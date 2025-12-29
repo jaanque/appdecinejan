@@ -64,13 +64,17 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
         // 2. Connector & Header Dark Color
         // Prioritize a rich dark color from the poster
-        _darkColor = darkVibrant ?? darkMuted ?? (dominant != null && dominant.computeLuminance() < 0.2 ? dominant : Colors.black);
+        _darkColor = darkVibrant ?? darkMuted ?? dominant ?? Colors.black;
+        // Ensure it's dark enough for text contrast if used as bg
+        if (_darkColor.computeLuminance() > 0.1) {
+          _darkColor = Color.alphaBlend(Colors.black.withOpacity(0.6), _darkColor);
+        }
 
         // 3. Main Background Color (Soft Tint)
         // Use a very light muted or vibrant tone blended with white
         final Color baseLight = lightMuted ?? lightVibrant ?? dominant ?? Colors.white;
-        // Blend heavily with white to ensure it's a soft tint
-        _backgroundColor = Color.alphaBlend(baseLight.withOpacity(0.15), Colors.white);
+        // Blend heavily with white to ensure it's a soft tint but slightly more saturated than before
+        _backgroundColor = Color.alphaBlend(baseLight.withOpacity(0.12), Colors.white);
 
         // 4. Vibrant Accent (Buttons & Icons)
         // Prefer the most vibrant option. If not found, look for any colorful option.
@@ -277,7 +281,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                     Icons.star_rounded,
                                     _movie.voteAverage!.toStringAsFixed(1),
                                     Colors.amber,
-                                    fillColor: Colors.black.withOpacity(0.4),
+                                    fillColor: _darkColor.withOpacity(0.8),
                                   ),
                                 const SizedBox(width: 8),
                                 if (_movie.releaseDate != null)
@@ -285,7 +289,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                     Icons.calendar_today_rounded,
                                     _movie.releaseDate!.split('-')[0],
                                     Colors.white,
-                                    fillColor: Colors.black.withOpacity(0.4),
+                                    fillColor: _darkColor.withOpacity(0.8),
                                   ),
                                 const SizedBox(width: 8),
                                 if (_movie.runtime != null)
@@ -293,7 +297,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                     Icons.access_time_rounded,
                                     _formatRuntime(_movie.runtime),
                                     Colors.white,
-                                    fillColor: Colors.black.withOpacity(0.4),
+                                    fillColor: _darkColor.withOpacity(0.8),
                                   ),
                                 const SizedBox(width: 8),
                                 if (_movie.mediaType == 'tv' && _movie.numberOfSeasons != null)
@@ -301,7 +305,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                     Icons.layers_rounded,
                                     "${_movie.numberOfSeasons} Seasons",
                                     Colors.white,
-                                    fillColor: Colors.black.withOpacity(0.4),
+                                    fillColor: _darkColor.withOpacity(0.8),
                                   ),
                               ],
                             ),
@@ -323,7 +327,12 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
               ),
               child: Container(
                 decoration: BoxDecoration(
-                  color: _backgroundColor, // Dynamic light body
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [_backgroundColor, Colors.white],
+                    stops: const [0.0, 0.3],
+                  ),
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
                   boxShadow: [
                     BoxShadow(
@@ -396,7 +405,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                     // Overview (Collapsible with Animation)
                     Text(
                       "Storyline",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _darkColor.withOpacity(0.8)),
                     ),
                     const SizedBox(height: 12),
                     InkWell(
@@ -480,7 +489,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                     if (_watchProviders.isNotEmpty) ...[
                       Text(
                         "Where to Watch",
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _darkColor.withOpacity(0.8)),
                       ),
                       const SizedBox(height: 16),
                       Wrap(
@@ -492,8 +501,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                               borderRadius: BorderRadius.circular(16),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
-                                  blurRadius: 8,
+                                  color: _vibrantColor.withOpacity(0.15),
+                                  blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
                               ],
@@ -524,7 +533,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                       // Empty state for watch providers if we tried to fetch them
                       Text(
                         "Where to Watch",
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _darkColor.withOpacity(0.8)),
                       ),
                       const SizedBox(height: 12),
                       Container(
@@ -553,7 +562,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                     if (_movie.cast != null && _movie.cast!.isNotEmpty) ...[
                       Text(
                         "Cast",
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _darkColor.withOpacity(0.8)),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -572,6 +581,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                   Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
+                                      border: Border.all(color: _vibrantColor.withOpacity(0.3), width: 2),
                                       boxShadow: [
                                          BoxShadow(
                                           color: Colors.black.withOpacity(0.1),
