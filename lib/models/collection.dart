@@ -29,6 +29,13 @@ class Collection {
       }
     }
 
+    // Determine isShared safely
+    bool shared = false;
+    if (currentUserId != null && json['user_id'] != null) {
+      final String ownerId = json['user_id'].toString();
+      shared = ownerId != currentUserId;
+    }
+
     return Collection(
       id: json['id'] as int?,
       name: json['name'] as String,
@@ -37,9 +44,7 @@ class Collection {
           : null,
       previewPosters: List<String>.from(posters),
       shareCode: json['share_code'] as String?,
-      isShared: currentUserId != null && json['user_id'] != null
-          ? json['user_id'] != currentUserId
-          : false,
+      isShared: shared,
     );
   }
 
