@@ -367,8 +367,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                             icon: const Icon(Icons.ios_share_rounded, size: 20),
                             label: const Text("Share"),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.black,
-                              side: BorderSide(color: Colors.grey.shade300),
+                              foregroundColor: _vibrantColor,
+                              side: BorderSide(color: _vibrantColor.withOpacity(0.5)),
                               padding: const EdgeInsets.symmetric(vertical: 18),
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             ),
