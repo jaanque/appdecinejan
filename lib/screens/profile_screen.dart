@@ -217,76 +217,181 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildUserProfile(User user) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey.shade50,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 40),
-              CircleAvatar(
-                radius: 50,
-                backgroundColor: Colors.grey.shade100,
-                child: Icon(Icons.person, size: 60, color: Colors.grey.shade400),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                user.email ?? 'User',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'ID: ${user.id.substring(0, 8)}...',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade500,
-                ),
-              ),
-              const SizedBox(height: 40),
-
-              // User Taste Profile
-              FutureBuilder<List<Movie>>(
-                future: _movieService.getAllMovies(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child: CircularProgressIndicator(color: Colors.black),
-                    );
-                  }
-                  if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-                  return UserTasteProfile(movies: snapshot.data!);
-                },
-              ),
-
-              const SizedBox(height: 40),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton(
-                  onPressed: _signOut,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.redAccent,
-                    side: const BorderSide(color: Colors.redAccent),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+              // 1. Profile Header
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 36,
+                    backgroundColor: Colors.white,
+                    child: Icon(Icons.person_rounded, size: 40, color: Colors.grey.shade400),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user.email ?? 'User',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Movie Enthusiast',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  child: const Text('Sign Out'),
+                  IconButton(
+                    onPressed: () {
+                      // Placeholder for edit profile
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Edit Profile Coming Soon")));
+                    },
+                    icon: Icon(Icons.edit_outlined, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              // 2. Taste Profile Section
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: FutureBuilder<List<Movie>>(
+                  future: _movieService.getAllMovies(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: Padding(
+                        padding: EdgeInsets.all(24.0),
+                        child: CircularProgressIndicator(color: Colors.black),
+                      ));
+                    }
+                    if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Column(
+                        children: [
+                          Icon(Icons.movie_creation_outlined, size: 48, color: Colors.grey.shade300),
+                          const SizedBox(height: 16),
+                          Text(
+                            "Start saving movies to see your taste profile!",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey.shade500),
+                          ),
+                        ],
+                      );
+                    }
+                    return UserTasteProfile(movies: snapshot.data!);
+                  },
                 ),
               ),
-              const SizedBox(height: 16),
+
+              const SizedBox(height: 24),
+
+              // 3. Settings / Options Section
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    _buildMenuOption(
+                      icon: Icons.favorite_rounded,
+                      title: 'Favorites',
+                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Coming Soon"))),
+                    ),
+                    Divider(height: 1, color: Colors.grey.shade100),
+                    _buildMenuOption(
+                      icon: Icons.settings_rounded,
+                      title: 'Settings',
+                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Coming Soon"))),
+                    ),
+                     Divider(height: 1, color: Colors.grey.shade100),
+                    _buildMenuOption(
+                      icon: Icons.help_outline_rounded,
+                      title: 'Help & Support',
+                      onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Coming Soon"))),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // 4. Sign Out
+              TextButton.icon(
+                onPressed: _signOut,
+                icon: const Icon(Icons.logout_rounded, size: 20),
+                label: const Text('Sign Out'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.redAccent.shade100,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMenuOption({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, size: 20, color: Colors.black87),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      trailing: Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey.shade400),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
     );
   }
 
