@@ -28,6 +28,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   final TMDBService _tmdbService = TMDBService();
 
   bool _isSearching = false;
+  bool _isAdded = false;
   Movie? _recommendedMovie;
   List<Color>? _glowColors;
 
@@ -106,6 +107,7 @@ class _ExploreScreenState extends State<ExploreScreen>
             _recommendedMovie = movie;
             _glowColors = palette;
             _isSearching = false;
+            _isAdded = false; // Ensure it's false for new movie
           });
         }
       } else {
@@ -171,21 +173,20 @@ class _ExploreScreenState extends State<ExploreScreen>
       _recommendedMovie = null;
       _glowColors = null;
       _isSearching = false;
+      _isAdded = false;
     });
   }
 
   Future<void> _addToHome() async {
     if (_recommendedMovie == null) return;
+    if (_isAdded) return;
 
     try {
       await _movieService.saveMovie(_recommendedMovie!);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("${_recommendedMovie!.title} added to Home"),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        setState(() {
+          _isAdded = true;
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -375,12 +376,14 @@ class _ExploreScreenState extends State<ExploreScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             ElevatedButton.icon(
-              onPressed: _addToHome,
-              icon: const Icon(Icons.add),
-              label: const Text("Add to Home"),
+              onPressed: _isAdded ? null : _addToHome,
+              icon: Icon(_isAdded ? Icons.check_rounded : Icons.add),
+              label: Text(_isAdded ? "Added" : "Add to Home"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
+                backgroundColor: _isAdded ? Colors.green.shade600 : Colors.black,
                 foregroundColor: Colors.white,
+                disabledBackgroundColor: Colors.green.shade600,
+                disabledForegroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
