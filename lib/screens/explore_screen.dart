@@ -108,7 +108,11 @@ class _ExploreScreenState extends State<ExploreScreen>
         if (mounted) {
           setState(() => _isSearching = false);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Could not generate a recommendation at this time.")),
+            const SnackBar(
+              content: Text(
+                "Could not generate a recommendation at this time.",
+              ),
+            ),
           );
         }
       }
@@ -117,7 +121,9 @@ class _ExploreScreenState extends State<ExploreScreen>
       if (mounted) {
         setState(() => _isSearching = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Error discovering movie. Please try again.")),
+          const SnackBar(
+            content: Text("Error discovering movie. Please try again."),
+          ),
         );
       }
     }
@@ -125,11 +131,12 @@ class _ExploreScreenState extends State<ExploreScreen>
 
   Future<List<Color>?> _generatePalette(Movie movie) async {
     try {
-      final PaletteGenerator generator = await PaletteGenerator.fromImageProvider(
-        NetworkImage(movie.posterUrl),
-        size: const Size(100, 150),
-        maximumColorCount: 20,
-      );
+      final PaletteGenerator generator =
+          await PaletteGenerator.fromImageProvider(
+            NetworkImage(movie.posterUrl),
+            size: const Size(100, 150),
+            maximumColorCount: 20,
+          );
 
       final candidates = [
         generator.vibrantColor?.color,
@@ -260,10 +267,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                   // Shake 3 times in the first 0.2 (400ms)
                   offset = sin(t * 5 * 2 * pi) * 0.1;
                 }
-                return Transform.rotate(
-                  angle: offset,
-                  child: child,
-                );
+                return Transform.rotate(angle: offset, child: child);
               },
               child: Container(
                 padding: const EdgeInsets.all(30),
@@ -275,7 +279,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                       color: Colors.grey.withOpacity(0.2),
                       blurRadius: 30,
                       spreadRadius: 10,
-                    )
+                    ),
                   ],
                 ),
                 child: Icon(
@@ -402,10 +406,7 @@ class _DiscreteGlowPainter extends CustomPainter {
   final double animationValue;
   final List<Color>? customColors;
 
-  _DiscreteGlowPainter({
-    required this.animationValue,
-    this.customColors,
-  });
+  _DiscreteGlowPainter({required this.animationValue, this.customColors});
 
   @override
   void paint(Canvas canvas, Size size) {
