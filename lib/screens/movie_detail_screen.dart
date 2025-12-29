@@ -29,6 +29,8 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
   Color _backgroundColor = Colors.white; // Main body background
   Color _darkColor = Colors.black; // Gradient end & connector
   Color _vibrantColor = Colors.blue; // Primary accents (buttons)
+  Color _buttonColor = Colors.blue; // Pastel background for main button
+  Color _buttonTextColor = Colors.white; // Text color for main button
   Color _mutedColor = Colors.grey; // Secondary text
   Color _chipColor = Colors.grey.shade100; // Chip background
   Color _chipTextColor = Colors.black; // Chip text
@@ -70,15 +72,28 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
         // Blend heavily with white to ensure it's a soft tint
         _backgroundColor = Color.alphaBlend(baseLight.withOpacity(0.15), Colors.white);
 
-        // 4. Vibrant Accent (Buttons)
-        // Prefer the most vibrant option
-        _vibrantColor = vibrant ?? darkVibrant ?? dominant ?? Colors.black;
+        // 4. Vibrant Accent (Buttons & Icons)
+        // Prefer the most vibrant option. If not found, look for any colorful option.
+        _vibrantColor = vibrant ?? darkVibrant ?? lightVibrant ?? dominant ?? Colors.black;
 
-        // 5. Muted Text Color
+        // 5. Pastel Button Color
+        // Prioritize a light/pastel tone. If not available, tint the vibrant color with white.
+        final Color rawPastel = lightVibrant ?? lightMuted ?? vibrant ?? dominant ?? Colors.grey;
+        if (rawPastel.computeLuminance() < 0.6) {
+           // If too dark, mix with white to make it pastel
+           _buttonColor = Color.alphaBlend(rawPastel.withOpacity(0.4), Colors.white);
+        } else {
+           _buttonColor = rawPastel;
+        }
+
+        // Ensure text is readable on pastel background (usually dark)
+        _buttonTextColor = _buttonColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
+
+        // 6. Muted Text Color
         // For secondary text, use a dark muted tone if available, else standard grey/black
         _mutedColor = darkMuted ?? muted ?? Colors.black54;
 
-        // 6. Chip Colors
+        // 7. Chip Colors
         // Background: Light vibrant or light muted with transparency
         _chipColor = (lightVibrant ?? lightMuted ?? dominant ?? Colors.grey.shade200).withOpacity(0.2);
         // Text: Dark vibrant or dark muted
@@ -348,12 +363,12 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                               icon: const Icon(Icons.bookmark_add_rounded),
                               label: const Text("Save Movie"),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: _vibrantColor,
-                                foregroundColor: _vibrantColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                                backgroundColor: _buttonColor,
+                                foregroundColor: _buttonTextColor,
                                 padding: const EdgeInsets.symmetric(vertical: 18),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                                 elevation: 8,
-                                shadowColor: _vibrantColor.withOpacity(0.4),
+                                shadowColor: _buttonColor.withOpacity(0.4),
                               ),
                             ),
                           ),
