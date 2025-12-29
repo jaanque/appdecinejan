@@ -380,10 +380,11 @@ class _ExploreScreenState extends State<ExploreScreen>
               icon: Icon(_isAdded ? Icons.check_rounded : Icons.add),
               label: Text(_isAdded ? "Added" : "Add to Home"),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _isAdded ? Colors.green.shade600 : Colors.black,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.green.shade600,
-                disabledForegroundColor: Colors.white,
+                backgroundColor: _isAdded ? Colors.grey.shade200 : Colors.black,
+                foregroundColor: _isAdded ? Colors.grey.shade500 : Colors.white,
+                disabledBackgroundColor: Colors.grey.shade200,
+                disabledForegroundColor: Colors.grey.shade500,
+                elevation: _isAdded ? 0 : 2,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,

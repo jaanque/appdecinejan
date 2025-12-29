@@ -88,48 +88,75 @@ class _MainScreenState extends State<MainScreen> {
         index: _selectedIndex,
         children: _screens,
       ),
-      bottomNavigationBar: NavigationBarTheme(
-        data: NavigationBarThemeData(
-          labelTextStyle: MaterialStateProperty.resolveWith((states) {
-            if (states.contains(MaterialState.selected)) {
-              return const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
-              );
-            }
-            return TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.normal,
-              color: Colors.grey.shade600,
-            );
-          }),
-        ),
-        child: NavigationBar(
-          selectedIndex: _selectedIndex,
-          onDestinationSelected: _onItemTapped,
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          indicatorColor: Colors.grey.shade200,
-          elevation: 0,
-          labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
-          destinations: [
-            NavigationDestination(
-              icon: Icon(Icons.home_outlined, color: Colors.grey.shade600),
-              selectedIcon: const Icon(Icons.home_rounded, color: Colors.black),
-              label: 'Home',
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(
+              color: Colors.grey.shade100,
+              width: 1.0,
             ),
-            NavigationDestination(
-              icon: Icon(Icons.explore_outlined, color: Colors.grey.shade600),
-              selectedIcon: const Icon(Icons.explore_rounded, color: Colors.black),
-              label: 'Explore',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.person_outline, color: Colors.grey.shade600),
-              selectedIcon: const Icon(Icons.person_rounded, color: Colors.black),
-              label: 'Profile',
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
             ),
           ],
+        ),
+        child: NavigationBarTheme(
+          data: NavigationBarThemeData(
+            labelTextStyle: MaterialStateProperty.resolveWith((states) {
+              if (states.contains(MaterialState.selected)) {
+                return const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                  letterSpacing: -0.2,
+                );
+              }
+              return TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey.shade400,
+                letterSpacing: -0.2,
+              );
+            }),
+            iconTheme: MaterialStateProperty.resolveWith((states) {
+               if (states.contains(MaterialState.selected)) {
+                 return const IconThemeData(size: 26);
+               }
+               return const IconThemeData(size: 24);
+            }),
+          ),
+          child: NavigationBar(
+            height: 65,
+            selectedIndex: _selectedIndex,
+            onDestinationSelected: _onItemTapped,
+            backgroundColor: Colors.transparent,
+            surfaceTintColor: Colors.transparent,
+            indicatorColor: Colors.transparent,
+            elevation: 0,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            destinations: [
+              NavigationDestination(
+                icon: Icon(Icons.grid_view_rounded, color: Colors.grey.shade400),
+                selectedIcon: const Icon(Icons.grid_view_rounded, color: Colors.black),
+                label: 'Library',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.explore_outlined, color: Colors.grey.shade400),
+                selectedIcon: const Icon(Icons.explore_rounded, color: Colors.black),
+                label: 'Discover',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.person_outline_rounded, color: Colors.grey.shade400),
+                selectedIcon: const Icon(Icons.person_rounded, color: Colors.black),
+                label: 'Profile',
+              ),
+            ],
+          ),
         ),
       ),
     );
