@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../models/movie.dart';
 import '../services/tmdb_service.dart';
@@ -46,7 +47,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
 
   Future<void> _updatePalette() async {
     final PaletteGenerator generator = await PaletteGenerator.fromImageProvider(
-      NetworkImage(_movie.posterUrl),
+      CachedNetworkImageProvider(_movie.posterUrl),
       size: const Size(100, 150),
       maximumColorCount: 20,
     );
@@ -189,10 +190,12 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                 fit: StackFit.expand,
                 children: [
                   // Backdrop
-                  Image.network(
-                    _movie.posterUrl,
+                  CachedNetworkImage(
+                    imageUrl: _movie.posterUrl,
                     fit: BoxFit.cover,
                     alignment: Alignment.topCenter,
+                    placeholder: (context, url) => Container(color: _backgroundColor),
+                    errorWidget: (context, url, error) => const Icon(Icons.error),
                   ),
                   // Gradient
                   Container(
@@ -511,11 +514,11 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                               borderRadius: BorderRadius.circular(16),
                               child: Tooltip(
                                 message: provider.providerName,
-                                child: Image.network(
-                                  provider.logoUrl,
+                                child: CachedNetworkImage(
+                                  imageUrl: provider.logoUrl,
                                   width: 56,
                                   height: 56,
-                                  errorBuilder: (context, error, stackTrace) =>
+                                  errorWidget: (context, url, error) =>
                                       Container(
                                           width: 56,
                                           height: 56,
@@ -593,7 +596,7 @@ class _MovieDetailScreenState extends State<MovieDetailScreen> {
                                     child: CircleAvatar(
                                       radius: 36, // Larger avatar
                                       backgroundImage: actor.profileUrl != null
-                                          ? NetworkImage(actor.profileUrl!)
+                                          ? CachedNetworkImageProvider(actor.profileUrl!)
                                           : null,
                                       backgroundColor: Colors.grey.shade200,
                                       child: actor.profileUrl == null

@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'dart:math';
@@ -139,7 +140,7 @@ class _ExploreScreenState extends State<ExploreScreen>
     try {
       final PaletteGenerator generator =
           await PaletteGenerator.fromImageProvider(
-            NetworkImage(movie.posterUrl),
+            CachedNetworkImageProvider(movie.posterUrl),
             size: const Size(100, 150),
             maximumColorCount: 20,
           );
@@ -351,7 +352,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                   ),
                 ],
                 image: DecorationImage(
-                  image: NetworkImage(_recommendedMovie!.posterUrl),
+                  image: CachedNetworkImageProvider(_recommendedMovie!.posterUrl),
                   fit: BoxFit.cover,
                 ),
               ),
