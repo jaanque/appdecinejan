@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/achievement.dart';
 import '../services/movie_service.dart';
+import '../services/achievement_service.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
@@ -11,6 +12,8 @@ class AchievementsScreen extends StatefulWidget {
 
 class _AchievementsScreenState extends State<AchievementsScreen> {
   final MovieService _movieService = MovieService();
+  final AchievementService _achievementService = AchievementService();
+
   bool _isLoading = true;
   List<Achievement> _achievements = [];
 
@@ -28,26 +31,39 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   @override
   void initState() {
     super.initState();
-    _checkAchievements();
+    _syncAchievements();
   }
 
-  Future<void> _checkAchievements() async {
+  Future<void> _syncAchievements() async {
     try {
+      // 1. Get current unlocked status from DB
+      final unlockedIds = await _achievementService.getUnlockedAchievementIds();
+
+      // 2. Check for NEW unlocks based on current data
       // Fetch user's saved movies to determine progress
       final movies = await _movieService.getAllMovies();
       final int movieCount = movies.length;
 
       final List<Achievement> updatedList = [];
+      final Set<String> newlyUnlocked = {};
 
       for (var achievement in _allAchievements) {
-        bool unlocked = false;
+        bool isUnlocked = unlockedIds.contains(achievement.id);
 
-        // Logic for each achievement
-        if (achievement.id == 'first_movie') {
-          unlocked = movieCount >= 1;
+        // Logic to check if it SHOULD be unlocked now (if not already)
+        if (!isUnlocked) {
+           if (achievement.id == 'first_movie' && movieCount >= 1) {
+             isUnlocked = true;
+             newlyUnlocked.add(achievement.id);
+           }
         }
 
-        updatedList.add(achievement.copyWith(isUnlocked: unlocked));
+        updatedList.add(achievement.copyWith(isUnlocked: isUnlocked));
+      }
+
+      // 3. Persist new unlocks to DB
+      for (final id in newlyUnlocked) {
+        await _achievementService.unlockAchievement(id);
       }
 
       if (mounted) {
@@ -55,9 +71,20 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
           _achievements = updatedList;
           _isLoading = false;
         });
+
+        // Optional: Show snackbar for new unlocks
+        if (newlyUnlocked.isNotEmpty) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(
+               content: Text("New achievement unlocked!"),
+               backgroundColor: Colors.black,
+               behavior: SnackBarBehavior.floating,
+             ),
+           );
+        }
       }
     } catch (e) {
-      debugPrint("Error checking achievements: $e");
+      debugPrint("Error syncing achievements: $e");
       if (mounted) {
         setState(() => _isLoading = false);
       }
