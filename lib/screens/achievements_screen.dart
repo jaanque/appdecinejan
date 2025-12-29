@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/achievement.dart';
 import '../services/movie_service.dart';
 import '../services/achievement_service.dart';
+import '../services/collection_service.dart';
 
 class AchievementsScreen extends StatefulWidget {
   const AchievementsScreen({super.key});
@@ -13,6 +14,7 @@ class AchievementsScreen extends StatefulWidget {
 class _AchievementsScreenState extends State<AchievementsScreen> {
   final MovieService _movieService = MovieService();
   final AchievementService _achievementService = AchievementService();
+  final CollectionService _collectionService = CollectionService();
 
   bool _isLoading = true;
   List<Achievement> _achievements = [];
@@ -24,8 +26,36 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       title: 'First Discovery',
       description: 'Add your first movie to the home screen.',
       iconData: Icons.movie_filter_rounded,
+      maxProgress: 1,
     ),
-    // Future achievements can be added here
+    const Achievement(
+      id: 'movie_buff',
+      title: 'Movie Buff',
+      description: 'Save 5 movies to your library.',
+      iconData: Icons.local_movies_rounded,
+      maxProgress: 5,
+    ),
+    const Achievement(
+      id: 'cinephile',
+      title: 'Cinephile',
+      description: 'Build a library of 20 movies.',
+      iconData: Icons.theaters_rounded,
+      maxProgress: 20,
+    ),
+    const Achievement(
+      id: 'collector_novice',
+      title: 'Collector',
+      description: 'Create your first collection.',
+      iconData: Icons.folder_rounded,
+      maxProgress: 1,
+    ),
+    const Achievement(
+      id: 'curator',
+      title: 'Curator',
+      description: 'Create 5 different collections.',
+      iconData: Icons.bookmarks_rounded,
+      maxProgress: 5,
+    ),
   ];
 
   @override
@@ -39,26 +69,56 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       // 1. Get current unlocked status from DB
       final unlockedIds = await _achievementService.getUnlockedAchievementIds();
 
-      // 2. Check for NEW unlocks based on current data
-      // Fetch user's saved movies to determine progress
+      // 2. Fetch user stats
       final movies = await _movieService.getAllMovies();
+      final collections = await _collectionService.getCollections();
+
       final int movieCount = movies.length;
+      final int collectionCount = collections.length;
 
       final List<Achievement> updatedList = [];
       final Set<String> newlyUnlocked = {};
 
       for (var achievement in _allAchievements) {
         bool isUnlocked = unlockedIds.contains(achievement.id);
+        int currentProgress = 0;
 
-        // Logic to check if it SHOULD be unlocked now (if not already)
-        if (!isUnlocked) {
-           if (achievement.id == 'first_movie' && movieCount >= 1) {
-             isUnlocked = true;
-             newlyUnlocked.add(achievement.id);
-           }
+        // Calculate progress based on achievement ID
+        switch (achievement.id) {
+          case 'first_movie':
+            currentProgress = movieCount;
+            break;
+          case 'movie_buff':
+            currentProgress = movieCount;
+            break;
+          case 'cinephile':
+            currentProgress = movieCount;
+            break;
+          case 'collector_novice':
+            currentProgress = collectionCount;
+            break;
+          case 'curator':
+            currentProgress = collectionCount;
+            break;
+          default:
+            currentProgress = 0;
         }
 
-        updatedList.add(achievement.copyWith(isUnlocked: isUnlocked));
+        // Cap progress at max
+        if (currentProgress > achievement.maxProgress) {
+          currentProgress = achievement.maxProgress;
+        }
+
+        // Check unlock condition
+        if (!isUnlocked && currentProgress >= achievement.maxProgress) {
+          isUnlocked = true;
+          newlyUnlocked.add(achievement.id);
+        }
+
+        updatedList.add(achievement.copyWith(
+          isUnlocked: isUnlocked,
+          currentProgress: currentProgress,
+        ));
       }
 
       // 3. Persist new unlocks to DB
@@ -72,7 +132,6 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
           _isLoading = false;
         });
 
-        // Optional: Show snackbar for new unlocks
         if (newlyUnlocked.isNotEmpty) {
            ScaffoldMessenger.of(context).showSnackBar(
              const SnackBar(
@@ -111,19 +170,90 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: Colors.black))
-          : ListView.separated(
-              padding: const EdgeInsets.all(24),
-              itemCount: _achievements.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 16),
-              itemBuilder: (context, index) {
-                return _buildAchievementCard(_achievements[index]);
-              },
+          : CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _buildSummaryHeader(),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.all(24),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _buildAchievementCard(_achievements[index]),
+                        );
+                      },
+                      childCount: _achievements.length,
+                    ),
+                  ),
+                ),
+              ],
             ),
+    );
+  }
+
+  Widget _buildSummaryHeader() {
+    final unlockedCount = _achievements.where((a) => a.isUnlocked).length;
+    final totalCount = _achievements.length;
+    final progress = totalCount > 0 ? unlockedCount / totalCount : 0.0;
+    final percentage = (progress * 100).toInt();
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+      child: Column(
+        children: [
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 100,
+                height: 100,
+                child: CircularProgressIndicator(
+                  value: progress,
+                  strokeWidth: 8,
+                  backgroundColor: Colors.grey.shade100,
+                  color: Colors.black,
+                  strokeCap: StrokeCap.round,
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    "$percentage%",
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "$unlockedCount of $totalCount Unlocked",
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildAchievementCard(Achievement achievement) {
     final bool isUnlocked = achievement.isUnlocked;
+    final double progressPercent = achievement.maxProgress > 0
+        ? achievement.currentProgress / achievement.maxProgress
+        : 0.0;
+
     final Color primaryColor = isUnlocked ? Colors.black : Colors.grey.shade300;
     final Color iconColor = isUnlocked ? Colors.amber.shade600 : Colors.grey.shade400;
     final Color textColor = isUnlocked ? Colors.black87 : Colors.grey.shade400;
@@ -145,50 +275,85 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
           color: isUnlocked ? Colors.grey.shade200 : Colors.transparent,
         ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isUnlocked ? Colors.amber.shade50 : Colors.grey.shade100,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              achievement.iconData,
-              size: 32,
-              color: iconColor,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: isUnlocked ? Colors.amber.shade50 : Colors.grey.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  achievement.iconData,
+                  size: 32,
+                  color: iconColor,
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          achievement.title,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                          ),
+                        ),
+                        if (isUnlocked)
+                           Icon(Icons.check_circle_rounded, color: Colors.green.shade400, size: 20)
+                        else
+                           Icon(Icons.lock_rounded, color: Colors.grey.shade300, size: 20),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      achievement.description,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: descriptionColor,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 20),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          if (!isUnlocked) ...[
+            const SizedBox(height: 16),
+            Row(
               children: [
-                Text(
-                  achievement.title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: progressPercent,
+                      backgroundColor: Colors.grey.shade100,
+                      color: Colors.amber.shade400,
+                      minHeight: 6,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(width: 12),
                 Text(
-                  achievement.description,
+                  "${achievement.currentProgress}/${achievement.maxProgress}",
                   style: TextStyle(
-                    fontSize: 13,
-                    color: descriptionColor,
-                    height: 1.4,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey.shade500,
                   ),
                 ),
               ],
             ),
-          ),
-          if (isUnlocked)
-            Padding(
-              padding: const EdgeInsets.only(left: 12),
-              child: Icon(Icons.check_circle_rounded, color: Colors.green.shade400, size: 24),
-            ),
+          ],
         ],
       ),
     );
