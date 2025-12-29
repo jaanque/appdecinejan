@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/collection.dart';
 import '../models/movie.dart';
@@ -35,7 +36,7 @@ class CollectionService {
           .order('created_at', ascending: false);
 
       final List<dynamic> data = response as List<dynamic>;
-      return data.map((json) => Collection.fromJson(json)).toList();
+      return data.map((json) => Collection.fromJson(json, currentUserId: user.id)).toList();
     } on PostgrestException catch (e) {
       _handlePostgrestError(e);
       return [];
@@ -122,6 +123,58 @@ class CollectionService {
           .eq('movie_id', movieId);
     } catch (e) {
       debugPrint('Error removing movie from collection: $e');
+      rethrow;
+    }
+  }
+
+  Future<String> shareCollection(int collectionId, {String? password}) async {
+    // Generate unique code XXX-XXX
+    final code = _generateShareCode();
+
+    try {
+      await _client.from('collections').update({
+        'share_code': code,
+        'share_password': password, // Ideally hashed, but storing plain as requested for MVP "password match"
+      }).eq('id', collectionId);
+      return code;
+    } catch (e) {
+      debugPrint('Error sharing collection: $e');
+      rethrow;
+    }
+  }
+
+  String _generateShareCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final rnd = Random();
+    String getRandomString(int length) => String.fromCharCodes(Iterable.generate(
+        length, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))));
+    return '${getRandomString(3)}-${getRandomString(3)}';
+  }
+
+  Future<void> joinCollection(String code, {String? password}) async {
+    try {
+      await _client.rpc('join_collection', params: {
+        'p_share_code': code,
+        'p_password': password,
+      });
+    } catch (e) {
+      debugPrint('Error joining collection: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> leaveCollection(int collectionId) async {
+     try {
+       final user = _client.auth.currentUser;
+       if (user == null) return;
+
+      await _client
+          .from('collection_access')
+          .delete()
+          .eq('collection_id', collectionId)
+          .eq('user_id', user.id);
+    } catch (e) {
+      debugPrint('Error leaving collection: $e');
       rethrow;
     }
   }
