@@ -77,6 +77,148 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
     }
   }
 
+  Future<void> _shareCollection() async {
+    if (widget.collection.id == null) return;
+
+    // Check if already shared (not stored in local model yet, but service knows)
+    // Actually we added shareCode to model.
+    String? currentShareCode = widget.collection.shareCode;
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        bool hasPassword = false;
+        final passController = TextEditingController();
+        String? generatedCode = currentShareCode;
+        bool isGenerating = false;
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: Colors.white,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Row(
+                children: [
+                   Icon(Icons.share_rounded, size: 24),
+                   SizedBox(width: 12),
+                   Text('Share Collection'),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (generatedCode != null) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text(
+                            "ACCESS CODE",
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SelectableText(
+                            generatedCode!,
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "Share this code with others to let them join this collection.",
+                      style: TextStyle(fontSize: 13, color: Colors.grey),
+                    ),
+                  ] else ...[
+                     const Text("Create a unique access code to share this collection."),
+                     const SizedBox(height: 24),
+                     Row(
+                       children: [
+                         Checkbox(
+                           value: hasPassword,
+                           activeColor: Colors.black,
+                           onChanged: (val) => setState(() => hasPassword = val == true),
+                         ),
+                         const Text("Require Password"),
+                       ],
+                     ),
+                     if (hasPassword)
+                       TextField(
+                         controller: passController,
+                         obscureText: true,
+                         decoration: const InputDecoration(
+                           hintText: 'Enter password',
+                           border: OutlineInputBorder(),
+                           contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                         ),
+                       ),
+                  ],
+                ],
+              ),
+              actions: [
+                if (generatedCode == null)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isGenerating ? null : () async {
+                        setState(() => isGenerating = true);
+                        try {
+                          final code = await _collectionService.shareCollection(
+                            widget.collection.id!,
+                            password: hasPassword && passController.text.isNotEmpty
+                                ? passController.text
+                                : null
+                          );
+                          setState(() {
+                             generatedCode = code;
+                             isGenerating = false;
+                          });
+                        } catch (e) {
+                          setState(() => isGenerating = false);
+                          // Show error
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: isGenerating
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                          : const Text("Generate Code"),
+                    ),
+                  )
+                else
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text("Done", style: TextStyle(color: Colors.black)),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _renameCollection() async {
     if (widget.collection.id == null) return;
 
@@ -206,6 +348,12 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
               ),
             ),
             actions: [
+              if (!widget.collection.isShared) // Only owner can share/rename/delete
+                IconButton(
+                  onPressed: _shareCollection,
+                  icon: const Icon(Icons.share_rounded, color: Colors.black),
+                  tooltip: 'Share Collection',
+                ),
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_horiz_rounded, color: Colors.black),
                 color: Colors.white,
@@ -213,29 +361,51 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                 onSelected: (value) {
                   if (value == 'rename') _renameCollection();
                   if (value == 'delete') _deleteCollection();
+                  if (value == 'leave') {
+                    // Handle leaving shared collection
+                     _collectionService.leaveCollection(widget.collection.id!).then((_) {
+                       if (mounted) Navigator.pop(context, true);
+                     });
+                  }
                 },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'rename',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined, size: 20),
-                        SizedBox(width: 12),
-                        Text('Rename'),
-                      ],
+                itemBuilder: (context) {
+                  if (widget.collection.isShared) {
+                    return [
+                      const PopupMenuItem(
+                        value: 'leave',
+                        child: Row(
+                          children: [
+                            Icon(Icons.exit_to_app_rounded, size: 20, color: Colors.red),
+                            SizedBox(width: 12),
+                            Text('Leave Collection', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ];
+                  }
+                  return [
+                    const PopupMenuItem(
+                      value: 'rename',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit_outlined, size: 20),
+                          SizedBox(width: 12),
+                          Text('Rename'),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                        SizedBox(width: 12),
-                        Text('Delete Collection', style: TextStyle(color: Colors.red)),
-                      ],
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                          SizedBox(width: 12),
+                          Text('Delete Collection', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ];
+                },
               ),
             ],
           ),

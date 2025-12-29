@@ -289,9 +289,132 @@ class _HomeScreenState extends State<HomeScreen> {
                 _showCollectionDialog();
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.input_rounded, color: Colors.black),
+              title: const Text('Join Collection'),
+              onTap: () {
+                Navigator.pop(context);
+                _showJoinCollectionDialog();
+              },
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  void _showJoinCollectionDialog() {
+    final codeController = TextEditingController();
+    final passController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        bool isLoading = false;
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: const Center(
+              child: Text(
+                "Join Collection",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "Enter the 6-character access code.",
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TextField(
+                    controller: codeController,
+                    textCapitalization: TextCapitalization.characters,
+                    autofocus: true,
+                    style: const TextStyle(fontSize: 16, letterSpacing: 2, fontWeight: FontWeight.bold),
+                    decoration: const InputDecoration(
+                      hintText: 'XXX-XXX',
+                      border: InputBorder.none,
+                      icon: Icon(Icons.key_rounded, color: Colors.grey),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TextField(
+                    controller: passController,
+                    obscureText: true,
+                    style: const TextStyle(fontSize: 16),
+                    decoration: const InputDecoration(
+                      hintText: 'Password (Optional)',
+                      border: InputBorder.none,
+                      icon: Icon(Icons.lock_outline_rounded, color: Colors.grey),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : () async {
+                      setState(() => isLoading = true);
+                      final code = codeController.text.trim();
+                      final pass = passController.text.isEmpty ? null : passController.text;
+
+                      try {
+                        await _collectionService.joinCollection(code, password: pass);
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Joined collection successfully!')),
+                          );
+                        }
+                        await _refreshData();
+                      } catch (e) {
+                         setState(() => isLoading = false);
+                         if (mounted) {
+                           ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Failed to join. Check code or password.')),
+                          );
+                         }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: isLoading
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : const Text(
+                      "Join",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
