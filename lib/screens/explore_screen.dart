@@ -419,8 +419,8 @@ class _DiscreteGlowPainter extends CustomPainter {
     final bool isActive = customColors != null && customColors!.isNotEmpty;
 
     // Adjust intensity based on state
-    final double opacity = isActive ? 0.5 : 0.1;
-    final double blurSigma = isActive ? 60.0 : 120.0;
+    final double opacity = isActive ? 0.3 : 0.08;
+    final double blurSigma = isActive ? 100.0 : 120.0;
 
     if (isActive) {
       // Active state: Movie colors, more noticeable
