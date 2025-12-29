@@ -17,7 +17,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   final CollectionService _collectionService = CollectionService();
   List<Movie> _movies = [];
   bool _isLoading = true;
-  late String _currentName;
+  String _currentName = '';
 
   @override
   void initState() {
@@ -273,7 +273,6 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                          ),
                        ),
                        const SizedBox(width: 12),
-                       // Could add more stats here like "Total Runtime" later
                     ],
                   ),
                 ],
@@ -345,11 +344,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                         children: [
                           MovieCard(
                             movie: movie,
-                            // Ensure onTap works normally if MovieCard exposes it,
-                            // otherwise defaults to card behavior (likely nav to details)
                           ),
-                          // Optional visual cue for long press?
-                          // For now, standard behavior is fine.
                         ],
                       ),
                     );
