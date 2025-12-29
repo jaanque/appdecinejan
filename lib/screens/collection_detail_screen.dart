@@ -30,13 +30,18 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
     if (widget.collection.id == null) return;
 
     setState(() => _isLoading = true);
-    final movies = await _collectionService.getMoviesInCollection(widget.collection.id!);
-
-    if (mounted) {
-      setState(() {
-        _movies = movies;
-        _isLoading = false;
-      });
+    try {
+      final movies = await _collectionService.getMoviesInCollection(widget.collection.id!);
+      if (mounted) {
+        setState(() {
+          _movies = movies;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -80,8 +85,6 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   Future<void> _shareCollection() async {
     if (widget.collection.id == null) return;
 
-    // Check if already shared (not stored in local model yet, but service knows)
-    // Actually we added shareCode to model.
     String? currentShareCode = widget.collection.shareCode;
 
     await showDialog(
@@ -154,7 +157,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                          Checkbox(
                            value: hasPassword,
                            activeColor: Colors.black,
-                           onChanged: (val) => setState(() => hasPassword = val == true),
+                           onChanged: (bool? val) => setState(() => hasPassword = val == true),
                          ),
                          const Text("Require Password"),
                        ],
@@ -255,7 +258,6 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
         setState(() {
           _currentName = newName;
         });
-        // Optionally notify parent to refresh
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -339,7 +341,11 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
             elevation: 0,
             floating: true,
             pinned: true,
-            leading: const BackButton(color: Colors.black),
+            // Replaced BackButton with explicit IconButton to avoid implicit Navigator.maybePop issues
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded, color: Colors.black),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
             title: Text(
               _currentName,
               style: const TextStyle(
@@ -364,12 +370,12 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                   } else if (value == 'delete') {
                     _deleteCollection();
                   } else if (value == 'leave') {
-                    // Handle leaving shared collection
                      _collectionService.leaveCollection(widget.collection.id!).then((_) {
                        if (mounted) Navigator.pop(context, true);
                      });
                   }
                 },
+                // Explicitly typed return
                 itemBuilder: (BuildContext context) {
                   if (widget.collection.isShared) {
                     return <PopupMenuEntry<String>>[
@@ -511,15 +517,11 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                   (context, index) {
                     final movie = _movies[index];
                     return GestureDetector(
-                      onLongPress: () {
-                         _removeMovie(movie);
-                      },
+                      onLongPress: () => _removeMovie(movie),
                       child: Stack(
                         children: [
                           MovieCard(
                             movie: movie,
-                            // Ensure internal tap/drag doesn't conflict if not needed here
-                            // But we need MovieCard visual
                           ),
                         ],
                       ),
