@@ -87,6 +87,15 @@ class CollectionService {
     }
   }
 
+  Future<void> renameCollection(int id, String newName) async {
+    try {
+      await _client.from('collections').update({'name': newName}).eq('id', id);
+    } catch (e) {
+      debugPrint('Error renaming collection: $e');
+      rethrow;
+    }
+  }
+
   Future<void> addMovieToCollection(int collectionId, int movieId) async {
     try {
       await _client.from('collection_movies').insert({
@@ -100,6 +109,19 @@ class CollectionService {
       rethrow;
     } catch (e) {
       debugPrint('Error adding movie to collection: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> removeMovieFromCollection(int collectionId, int movieId) async {
+    try {
+      await _client
+          .from('collection_movies')
+          .delete()
+          .eq('collection_id', collectionId)
+          .eq('movie_id', movieId);
+    } catch (e) {
+      debugPrint('Error removing movie from collection: $e');
       rethrow;
     }
   }
