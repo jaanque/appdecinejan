@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../models/collection.dart';
 import '../models/movie.dart'; // Needed for DragTarget type
@@ -244,7 +245,7 @@ class CollectionCard extends StatelessWidget {
               ),
             ],
             image: DecorationImage(
-              image: NetworkImage(url),
+              image: CachedNetworkImageProvider(url),
               fit: BoxFit.cover,
             ),
             border: Border.all(color: Colors.white, width: 2), // White border to separate cards

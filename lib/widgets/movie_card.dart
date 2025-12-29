@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../models/movie.dart';
 import '../screens/movie_detail_screen.dart';
@@ -58,10 +59,10 @@ class _MovieCardState extends State<MovieCard> {
               children: [
                 // If we are in selection mode, disable the Hero to avoid conflicts during UI updates
                 widget.isSelectionMode
-                    ? Image.network(
-                        widget.movie.posterUrl,
+                    ? CachedNetworkImage(
+                        imageUrl: widget.movie.posterUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (ctx, err, stack) => Container(
+                        errorWidget: (ctx, url, error) => Container(
                           color: Colors.grey[200],
                           child: const Center(
                             child: Icon(Icons.broken_image, color: Colors.grey),
@@ -70,10 +71,10 @@ class _MovieCardState extends State<MovieCard> {
                       )
                     : Hero(
                         tag: 'movie_poster_${widget.movie.title}',
-                        child: Image.network(
-                          widget.movie.posterUrl,
+                        child: CachedNetworkImage(
+                          imageUrl: widget.movie.posterUrl,
                           fit: BoxFit.cover,
-                          errorBuilder: (ctx, err, stack) => Container(
+                          errorWidget: (ctx, url, error) => Container(
                             color: Colors.grey[200],
                             child: const Center(
                               child: Icon(Icons.broken_image, color: Colors.grey),
@@ -159,8 +160,8 @@ class _MovieCardState extends State<MovieCard> {
                 borderRadius: BorderRadius.circular(16),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    widget.movie.posterUrl,
+                  child: CachedNetworkImage(
+                    imageUrl: widget.movie.posterUrl,
                     fit: BoxFit.cover,
                   ),
                 ),
