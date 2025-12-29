@@ -197,8 +197,12 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
   Widget _buildSummaryHeader() {
     final unlockedCount = _achievements.where((a) => a.isUnlocked).length;
     final totalCount = _achievements.length;
-    final progress = totalCount > 0 ? unlockedCount / totalCount : 0.0;
-    final percentage = (progress * 100).toInt();
+    // Calculate progress with safety checks
+    final double rawProgress = totalCount > 0 ? unlockedCount / totalCount : 0.0;
+    // Ensure progress is valid (0.0 to 1.0)
+    final double progress = rawProgress.clamp(0.0, 1.0);
+    // Explicitly handle type for int conversion
+    final int percentage = (progress * 100).toInt();
 
     return Container(
       color: Colors.white,
@@ -250,9 +254,14 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
 
   Widget _buildAchievementCard(Achievement achievement) {
     final bool isUnlocked = achievement.isUnlocked;
-    final double progressPercent = achievement.maxProgress > 0
-        ? achievement.currentProgress / achievement.maxProgress
-        : 0.0;
+
+    // Safety check for calculation
+    double progressPercent = 0.0;
+    if (achievement.maxProgress > 0) {
+      progressPercent = achievement.currentProgress / achievement.maxProgress;
+    }
+    // Clamp to ensure valid range for LinearProgressIndicator
+    progressPercent = progressPercent.clamp(0.0, 1.0);
 
     final Color primaryColor = isUnlocked ? Colors.black : Colors.grey.shade300;
     final Color iconColor = isUnlocked ? Colors.amber.shade600 : Colors.grey.shade400;
